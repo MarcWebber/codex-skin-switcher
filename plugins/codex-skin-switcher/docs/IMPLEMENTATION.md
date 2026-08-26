@@ -9,6 +9,9 @@ runtime/
 ├── skin.mjs
 ├── watch.sh
 └── themes/<id>/{theme.json,extra.css,art.png[,可选子图.png]}
+scripts/
+├── start-codex-with-skin.ps1
+└── start-codex-with-skin.cmd
 ```
 
 `server.mjs` 只提供 `get_skin_status` 和 `set_skin`，负责复制运行时、发现主题、保存偏好并调用 `skin.mjs`。`skin.mjs` 通过本机 CDP 连接 Codex 的 `app://-/index.html`，写入一个主题 `<style>`、`data-codex-skin` 和顶部切换器。`base.css` 集中维护当前 Codex 宿主页面的共享映射。
@@ -16,6 +19,8 @@ runtime/
 项目没有 FPS 侦测、Spotlight 搜索、bundle id 校验或旧版选择器。应用路径只有两项：默认 `/Applications/ChatGPT.app`，以及可选的 `CODEX_APP_PATH`。
 
 Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。选择非原生主题时，`server.mjs` 注册一个最小 LaunchAgent。`watch.sh` 等待用户正常退出 Codex，再通过 `/usr/bin/open` 带上本机 CDP 参数启动，并恢复 `preference.json` 中的主题。它不强制退出进程、不扫描安装位置、不采集性能数据。启动或注入失败时，它发送一次 macOS 通知、删除自己的 plist 并正常退出；后续 Codex 按原生方式启动，不会再次携带 CDP 参数。选择原生主题也会卸载 Watcher。
+
+Windows 不运行常驻 Watcher。`scripts/start-codex-with-skin.ps1` 在 `%LOCALAPPDATA%\CodexSkinSwitcher` 准备运行时，以回环 CDP 参数启动 Codex，等待页面就绪后注入主题并退出。它不创建服务、计划任务或其他后台进程。
 
 ## 主题注入
 
@@ -44,6 +49,7 @@ art.png      # 本地背景图
 - `server.mjs`：MCP、主题发现、偏好、Watcher 注册与 CDP 调用。
 - `skin.mjs`：主题校验、CSS 生成、CDP 注入与清理。
 - `watch.sh`：等待下一次正常启动，补充本机 CDP 参数并恢复主题。
+- `scripts/start-codex-with-skin.ps1`：Windows 运行时准备、Codex 定位与一次性注入入口。
 - `base.css`：当前 Codex 版本的按钮、消息、输入区、菜单、终端、文件、Diff 与设置页映射。
 - 主题三个核心文件：用户修改配色、字体、背景和局部风格的集中入口。
 - `skills/skin-creator/SKILL.md`：把提示词和参考图转成主题文件与可选插图。
