@@ -18,7 +18,7 @@ scripts/
 
 项目没有 FPS 侦测、Spotlight 搜索、bundle id 校验或旧版选择器。应用路径只有两项：默认 `/Applications/ChatGPT.app`，以及可选的 `CODEX_APP_PATH`。
 
-Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。选择非原生主题时，`server.mjs` 注册一个最小 LaunchAgent。`watch.sh` 等待用户正常退出 Codex，再通过 `/usr/bin/open` 带上本机 CDP 参数启动，并恢复 `preference.json` 中的主题。它不强制退出进程、不扫描安装位置、不采集性能数据。启动或注入失败时，它发送一次 macOS 通知、删除自己的 plist 并正常退出；后续 Codex 按原生方式启动，不会再次携带 CDP 参数。选择原生主题也会卸载 Watcher。
+Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。选择非原生主题时，`server.mjs` 注册一个最小 LaunchAgent。`watch.sh` 只按主可执行文件判断 Codex 是否仍在运行，不会把应用包内由 tmux、CLI 或小助手启动的 Node/辅助进程误认为主窗口。它等待用户正常退出 Codex，再通过 `/usr/bin/open` 带上本机 CDP 参数启动，并恢复 `preference.json` 中的主题。它不强制退出进程、不扫描安装位置、不采集性能数据。启动或注入失败时，它发送一次 macOS 通知、删除自己的 plist 并正常退出；后续 Codex 按原生方式启动，不会再次携带 CDP 参数。选择原生主题也会卸载 Watcher。
 
 Windows 不运行常驻 Watcher。`scripts/start-codex-with-skin.ps1` 在 `%LOCALAPPDATA%\CodexSkinSwitcher` 准备运行时，以回环 CDP 参数启动 Codex，等待页面就绪后注入主题并退出。它不创建服务、计划任务或其他后台进程。
 

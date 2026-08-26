@@ -34,6 +34,8 @@ open -n "/Applications/ChatGPT.app" --args \
 
 随后它恢复当前主题，并继续等待下一次正常退出。启动或注入失败时，Watcher 会发送一次 macOS 通知、删除自己的 plist 并正常退出。此后从 Dock 正常打开 Codex，不再携带调试参数，也不会循环重试或写 `recovery.json`。选择“原生”同样会卸载它。
 
+Watcher 只识别 `Contents/MacOS/ChatGPT` 主可执行文件。tmux、CLI、小助手或 Codex 自己启动的 Node/Helper 进程即使位于应用包内，也不会阻止 Watcher 在主窗口退出后恢复皮肤。
+
 ## 皮肤已选择，但没有变化
 
 先查看状态。如果 `cdpReady` 为 `false`，说明当前 Codex 没有开启本机调试端口。正常退出一次，Watcher 会带参数重开并恢复主题。它不会强制退出正在使用的 Codex。使用自定义安装位置时，设置一个 `CODEX_APP_PATH` 即可；不会再扫描其他目录。
