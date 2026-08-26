@@ -3,11 +3,11 @@
 </p>
 
 <p align="center">
-  macOS 上的 Codex 本地皮肤切换器：一键换肤、一键恢复原生，也可以用一句提示词创建新皮肤。
+  Codex 本地皮肤切换器：macOS 插件自动化与 Windows 一次性启动器，一键换肤、一键恢复原生。
 </p>
 
 <p align="center">
-  <strong>macOS only</strong> · <strong>Local assets</strong> · <strong>Native rollback</strong> · <strong>3-file themes</strong>
+  <strong>macOS plugin</strong> · <strong>Windows launcher</strong> · <strong>Local assets</strong> · <strong>Native rollback</strong>
 </p>
 
 ![莱依拉星梦主题主页](./assets/screenshots/layla-home.png)
@@ -41,11 +41,11 @@
 
 | 项目 | 支持范围 |
 | --- | --- |
-| 系统 | macOS |
-| Codex | `26.820.60940` |
+| 系统 | macOS（插件完整流程）；Windows 11（源码一次性启动器） |
+| Codex | macOS `26.820.60940`；Windows 当前本机 `26.818.8289.0` 已验证注入 |
 | Node.js | `22+`，`node` 需要在 Codex 可用的 PATH 中 |
 
-插件只维护上表中的 Codex 版本，不包含旧版或未来版本的兼容分支。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./docs/TROUBLESHOOTING.md) 更新共享宿主映射。
+macOS 插件只维护上表中的目标版本，不包含旧版或未来版本的兼容分支。Windows 启动器复用同一套 CDP 注入运行时与主题映射。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./docs/TROUBLESHOOTING.md) 更新共享宿主映射。
 
 ## 安装
 
@@ -83,6 +83,43 @@ MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。Codex 
 “创建皮肤”会在空输入框中插入蓝色的原生 `skin-creator` Skill mention，并留下可编辑的“风格：”；补充完风格后再由你手动发送。
 
 ![原生 Skin Creator mention 与参考图](./assets/screenshots/skin-creator.png)
+
+### Windows 一次性启动器（本地 CDP 注入）
+
+Windows 启动器把运行时复制到 `%LOCALAPPDATA%\CodexSkinSwitcher`，用 `127.0.0.1:9335` 本地 CDP 参数启动 Codex，等待 12 秒后恢复皮肤和顶部工具栏，随后立即退出。它不创建 watcher、服务、计划任务或其他后台进程，因此关闭 Codex 后不会自动重开。
+
+启动器通过自身的 `$PSScriptRoot` 动态定位仓库，不包含本机仓库路径或 Codex 版本目录。首次或日常启用均可在仓库根目录执行：
+
+```powershell
+.\scripts\start-codex-with-skin.ps1
+```
+
+也可以双击：
+
+```text
+scripts\start-codex-with-skin.cmd
+```
+
+指定主题或端口：
+
+```powershell
+.\scripts\start-codex-with-skin.ps1 -Theme paper-lantern
+.\scripts\start-codex-with-skin.ps1 -Port 9444
+```
+
+启动器按 `-CodexExe`、`CODEX_APP_PATH`、运行中的 Codex、Appx 安装信息和本地缓存依次查找 `ChatGPT.exe`。自动发现失败时，可以显式提供路径：
+
+```powershell
+.\scripts\start-codex-with-skin.ps1 -CodexExe 'C:\路径\到\ChatGPT.exe'
+```
+
+恢复原生界面：
+
+```powershell
+.\scripts\start-codex-with-skin.ps1 -Theme native
+```
+
+如果 Codex 已经普通启动且没有开放所选 CDP 端口，脚本会提示你手动关闭后重试，不会强制结束进程。脚本不修改 Codex 应用包或 `~/.codex/config.toml`，也不会在后台自动重试。
 
 ### 一句话创建皮肤
 

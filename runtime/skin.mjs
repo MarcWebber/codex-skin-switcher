@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 const args = process.argv.slice(2);
@@ -9,7 +10,10 @@ const option = (name, fallback = null) => {
   const index = args.indexOf(name);
   return index < 0 ? fallback : args[index + 1];
 };
-const stateRoot = path.resolve(option("--root", path.join(process.env.HOME, "Library/Application Support/CodexSkinSwitcher")));
+const defaultStateRoot = process.platform === "win32"
+  ? path.join(process.env.LOCALAPPDATA || process.env.USERPROFILE || os.homedir(), "CodexSkinSwitcher")
+  : path.join(process.env.HOME || os.homedir(), "Library", "Application Support", "CodexSkinSwitcher");
+const stateRoot = path.resolve(option("--root", defaultStateRoot));
 const port = Number(option("--port", 9335));
 const creatorSkillPath = option("--creator-skill-path", "");
 const themePattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;

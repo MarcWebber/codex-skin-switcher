@@ -11,6 +11,9 @@ runtime/
 ├── skin.mjs
 ├── watch.sh
 └── themes/<id>/{theme.json,extra.css,art.png[,可选子图.png]}
+scripts/
+├── start-codex-with-skin.ps1
+└── start-codex-with-skin.cmd
 ```
 
 `server.mjs` 只提供 `get_skin_status` 和 `set_skin`。MCP 以插件根目录为 `cwd`，通过 PATH 中的 `node` 启动，不包含开发者机器的绝对路径。服务把运行时复制到 `~/Library/Application Support/CodexSkinSwitcher/`，只在主题不存在时写入预制主题，因此用户编辑不会被插件更新覆盖。`skin-creator` Skill 接收一段提示词和可选参考图，生成三个核心文件；需要时再增加菜单或主页卡片子图，然后调用现有切换工具。交互入口只有 Codex 顶部一次性注入的“皮肤”按钮，不再维护网页控制卡。
@@ -31,6 +34,8 @@ Codex 必须带本机调试端口启动。服务先校验 bundle id `com.openai.
 ```
 
 旧版曾直接执行应用包内二进制并出现前台约 10 FPS。当前版本只通过 LaunchServices 启动。安全启动、CDP 或注入失败时，watcher 立即停止自动重试，保留原生界面，并把原因写到 `recovery.json`。`get_skin_status` 会返回 `degraded` 与恢复信息，避免静默失败或循环重启。
+
+Windows 不运行常驻 watcher。仓库入口 `scripts/start-codex-with-skin.ps1` 动态定位仓库与 Codex、准备 `%LOCALAPPDATA%\CodexSkinSwitcher`、用回环 CDP 参数启动应用、等待 12 秒再注入，然后退出。等待用于避免 CDP target 已出现但页面 DOM 尚未就绪的竞态。关闭 Codex 后不会自动重开；下次需要皮肤时再次运行启动器即可。
 
 宿主目标固定为 Codex macOS `26.820.60940`。`base.css` 只保留该版本当前使用的主内容区、输入区、按钮、文件、终端和设置变量；不叠加旧版选择器。升级 Codex 时先重新对照 DOM，再用当前结构重写失效位置。
 
@@ -80,6 +85,7 @@ html[data-codex-skin="paper-lantern"] aside.app-shell-left-panel {
 - `server.mjs`：MCP、主题发现、偏好、LaunchAgent。
 - `skin.mjs`：主题校验、CSS 生成、CDP 写入和清理。
 - `watch.sh`：macOS 普通启动转换为带本机 CDP 的 LaunchServices 启动。
+- `scripts/start-codex-with-skin.ps1`：Windows 运行时准备、Codex 动态定位、一次性安全启动与注入入口。
 - `base.css`：共享宿主映射。
 - 主题三个核心文件：用户修改配色、字体、背景和局部图标的集中入口。
 - 可选子图：菜单背景和四张完全不同的主页按钮背景，只在角色主题确实需要时生成。
