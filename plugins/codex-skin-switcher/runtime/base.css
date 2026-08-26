@@ -1,18 +1,22 @@
 html[data-codex-skin] {
   color-scheme: var(--skin-color-scheme, light) !important;
   background: var(--skin-canvas) !important;
-  --codex-base-surface: var(--skin-surface) !important;
-  --color-background-surface-under: var(--skin-canvas) !important;
-  --color-background-surface: var(--skin-surface) !important;
-  --color-background-panel: var(--skin-sidebar) !important;
+  --skin-shell-glass: color-mix(in srgb, var(--skin-surface) 22%, transparent);
+  --skin-sidebar-glass: color-mix(in srgb, var(--skin-sidebar) 62%, transparent);
+  --skin-overlay-glass: color-mix(in srgb, var(--skin-surface) 76%, transparent);
+  --skin-editor-glass: color-mix(in srgb, var(--skin-control) 88%, transparent);
+  --codex-base-surface: var(--skin-shell-glass) !important;
+  --color-background-surface-under: transparent !important;
+  --color-background-surface: var(--skin-shell-glass) !important;
+  --color-background-panel: var(--skin-sidebar-glass) !important;
   --color-background-control: var(--skin-control) !important;
   --color-background-control-opaque: var(--skin-control) !important;
-  --color-background-editor-opaque: var(--skin-control) !important;
-  --color-background-elevated-primary: var(--skin-surface) !important;
-  --color-background-elevated-primary-opaque: var(--skin-surface) !important;
-  --color-background-elevated-secondary: var(--skin-control) !important;
-  --color-background-elevated-secondary-opaque: var(--skin-control) !important;
-  --color-background-application-menu: var(--skin-control) !important;
+  --color-background-editor-opaque: var(--skin-editor-glass) !important;
+  --color-background-elevated-primary: var(--skin-overlay-glass) !important;
+  --color-background-elevated-primary-opaque: var(--skin-overlay-glass) !important;
+  --color-background-elevated-secondary: var(--skin-overlay-glass) !important;
+  --color-background-elevated-secondary-opaque: var(--skin-overlay-glass) !important;
+  --color-background-application-menu: var(--skin-overlay-glass) !important;
   --color-background-button-primary: var(--skin-accent) !important;
   --color-background-button-primary-hover: color-mix(in srgb, var(--skin-accent) 88%, white) !important;
   --color-background-button-primary-active: color-mix(in srgb, var(--skin-accent) 82%, var(--skin-text)) !important;
@@ -55,25 +59,25 @@ html[data-codex-skin] {
   --color-border-heavy: color-mix(in srgb, var(--skin-text) 20%, transparent) !important;
   --color-border-strong: color-mix(in srgb, var(--skin-text) 20%, transparent) !important;
   --color-border-application-menu-separator: var(--skin-border) !important;
-  --color-codex-diff-surface: var(--skin-control) !important;
-  --color-codex-application-menu: var(--skin-control) !important;
+  --color-codex-diff-surface: var(--skin-editor-glass) !important;
+  --color-codex-application-menu: var(--skin-overlay-glass) !important;
   --color-codex-application-menu-selection: color-mix(in srgb, var(--skin-accent) 12%, var(--skin-control)) !important;
-  --color-surface: var(--skin-surface) !important;
-  --color-surface-elevated: var(--skin-surface) !important;
-  --color-surface-elevated-secondary: var(--skin-control) !important;
-  --color-surface-secondary: var(--skin-sidebar) !important;
-  --color-surface-tertiary: var(--skin-control) !important;
-  --vscode-editor-background: var(--skin-control) !important;
+  --color-surface: var(--skin-shell-glass) !important;
+  --color-surface-elevated: var(--skin-overlay-glass) !important;
+  --color-surface-elevated-secondary: var(--skin-overlay-glass) !important;
+  --color-surface-secondary: var(--skin-sidebar-glass) !important;
+  --color-surface-tertiary: var(--skin-editor-glass) !important;
+  --vscode-editor-background: var(--skin-editor-glass) !important;
   --vscode-editor-foreground: var(--skin-text) !important;
-  --vscode-sideBar-background: var(--skin-sidebar) !important;
-  --vscode-panel-background: var(--skin-control) !important;
+  --vscode-sideBar-background: var(--skin-sidebar-glass) !important;
+  --vscode-panel-background: var(--skin-editor-glass) !important;
   --vscode-input-background: var(--skin-control) !important;
   --vscode-input-foreground: var(--skin-text) !important;
   --vscode-input-border: var(--skin-border) !important;
   --vscode-dropdown-background: var(--skin-control) !important;
   --vscode-dropdown-foreground: var(--skin-text) !important;
   --vscode-dropdown-border: var(--skin-border) !important;
-  --vscode-menu-background: var(--skin-control) !important;
+  --vscode-menu-background: var(--skin-overlay-glass) !important;
   --vscode-menu-foreground: var(--skin-text) !important;
   --vscode-menu-border: var(--skin-border) !important;
   --vscode-menu-selectionBackground: color-mix(in srgb, var(--skin-accent) 14%, var(--skin-control)) !important;
@@ -108,10 +112,10 @@ html[data-codex-skin] {
   --vscode-settings-numberInputForeground: var(--skin-text) !important;
   --vscode-settings-numberInputBorder: var(--skin-border) !important;
   --vscode-settings-rowHoverBackground: color-mix(in srgb, var(--skin-accent) 8%, var(--skin-control)) !important;
-  --vscode-editorWidget-background: var(--skin-control) !important;
+  --vscode-editorWidget-background: var(--skin-overlay-glass) !important;
   --vscode-editorWidget-foreground: var(--skin-text) !important;
   --vscode-editorWidget-border: var(--skin-border) !important;
-  --vscode-quickInput-background: var(--skin-control) !important;
+  --vscode-quickInput-background: var(--skin-overlay-glass) !important;
   --vscode-quickInput-foreground: var(--skin-text) !important;
   --vscode-quickInputList-focusBackground: color-mix(in srgb, var(--skin-accent) 12%, var(--skin-control)) !important;
   --vscode-quickInputList-focusForeground: var(--skin-text) !important;
@@ -120,10 +124,10 @@ html[data-codex-skin] {
   --vscode-list-activeSelectionBackground: color-mix(in srgb, var(--skin-accent) 16%, var(--skin-control)) !important;
   --vscode-list-activeSelectionForeground: var(--skin-text) !important;
   --vscode-list-inactiveSelectionBackground: color-mix(in srgb, var(--skin-accent) 11%, var(--skin-control)) !important;
-  --vscode-tab-activeBackground: var(--skin-control) !important;
+  --vscode-tab-activeBackground: var(--skin-editor-glass) !important;
   --vscode-tab-activeForeground: var(--skin-text) !important;
   --vscode-tab-inactiveBackground: color-mix(in srgb, var(--skin-sidebar) 82%, var(--skin-control)) !important;
-  --vscode-editorGroupHeader-tabsBackground: var(--skin-sidebar) !important;
+  --vscode-editorGroupHeader-tabsBackground: var(--skin-sidebar-glass) !important;
   --vscode-textBlockQuote-background: var(--skin-control) !important;
   --vscode-textBlockQuote-border: var(--skin-border) !important;
   --vscode-textCodeBlock-background: var(--skin-control) !important;
@@ -132,9 +136,22 @@ html[data-codex-skin] {
 }
 
 html[data-codex-skin] body {
+  position: relative;
+  min-height: 100vh;
+  isolation: isolate;
   color: var(--skin-text) !important;
   background: var(--skin-canvas) !important;
   font-family: var(--skin-font) !important;
+}
+
+html[data-codex-skin] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--skin-art-opacity);
+  background: var(--skin-art) var(--skin-art-position) / cover no-repeat;
 }
 
 html[data-codex-skin] button,
@@ -188,7 +205,7 @@ html[data-codex-skin] button:focus-visible {
 
 html[data-codex-skin] aside.app-shell-left-panel {
   color: var(--skin-text) !important;
-  background: var(--skin-sidebar) !important;
+  background: var(--skin-sidebar-glass) !important;
   border-color: var(--skin-border) !important;
 }
 
@@ -196,20 +213,14 @@ html[data-codex-skin] main[class*="MainContentSurface"] {
   position: relative !important;
   isolation: isolate !important;
   color: var(--skin-text) !important;
-  background: var(--skin-surface) !important;
+  background: transparent !important;
   border: 1px solid var(--skin-border) !important;
   border-right: 0 !important;
   border-bottom: 0 !important;
 }
 
 html[data-codex-skin] main[class*="MainContentSurface"]::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: var(--skin-art-opacity);
-  background: var(--skin-art) var(--skin-art-position) / cover no-repeat;
+  content: none;
 }
 
 html[data-codex-skin] [class*="bg-text/5"] {
@@ -229,8 +240,13 @@ html[data-codex-skin] [role="dialog"],
 html[data-codex-skin] [role="menu"],
 html[data-codex-skin] [data-radix-popper-content-wrapper] > * {
   color: var(--skin-text) !important;
-  background: var(--skin-surface) !important;
+  background: var(--skin-overlay-glass) !important;
   border-color: var(--skin-border) !important;
+  backdrop-filter: blur(20px);
+}
+
+html[data-codex-skin] .codex-dialog-overlay {
+  background: color-mix(in srgb, var(--skin-canvas) 18%, transparent) !important;
 }
 
 html[data-codex-skin] [class*="group/turn-diff"],
@@ -239,7 +255,7 @@ html[data-codex-skin] [data-testid="diff-preview-scroll"],
 html[data-codex-skin] [data-testid="generated-image-preview"],
 html[data-codex-skin] [data-testid="generated-image-gallery"] {
   color: var(--skin-text) !important;
-  background: var(--skin-control) !important;
+  background: var(--skin-editor-glass) !important;
   border: 1px solid var(--skin-border) !important;
   border-radius: 12px !important;
 }
@@ -252,12 +268,12 @@ html[data-codex-skin] [class*="group/turn-diff-file-row"] > button {
 
 html[data-codex-skin] [data-app-shell-tabs="true"] {
   color: var(--skin-text) !important;
-  background: var(--skin-surface) !important;
+  background: var(--skin-editor-glass) !important;
   border-color: var(--skin-border) !important;
 }
 
 html[data-codex-skin] [data-app-shell-tabs="true"] > [class*="h-toolbar-pane"] {
-  background: linear-gradient(90deg, var(--skin-surface), color-mix(in srgb, var(--skin-accent) 7%, var(--skin-surface))) !important;
+  background: linear-gradient(90deg, var(--skin-editor-glass), color-mix(in srgb, var(--skin-accent) 7%, var(--skin-editor-glass))) !important;
   border-bottom: 1px solid var(--skin-border) !important;
 }
 
@@ -270,8 +286,8 @@ html[data-codex-skin] [data-app-shell-tabs="true"] button[role="tab"] {
 html[data-codex-skin] [data-codex-terminal="true"][data-codex-xterm="true"] {
   --codex-base-accent: var(--skin-accent) !important;
   --codex-base-ink: var(--skin-text) !important;
-  --codex-base-surface: var(--skin-control) !important;
-  --color-codex-terminal-background: var(--skin-control) !important;
+  --codex-base-surface: var(--skin-editor-glass) !important;
+  --color-codex-terminal-background: var(--skin-editor-glass) !important;
   --color-codex-terminal-foreground: var(--skin-text) !important;
   --color-codex-terminal-selection: color-mix(in srgb, var(--skin-accent) 24%, transparent) !important;
   --color-codex-terminal-selection-inactive: color-mix(in srgb, var(--skin-accent) 14%, transparent) !important;
@@ -291,20 +307,20 @@ html[data-codex-skin] [data-codex-terminal="true"][data-codex-xterm="true"] {
   --color-codex-terminal-ansi-bright-cyan: color-mix(in srgb, var(--skin-accent) 42%, #65c1c3) !important;
   --color-codex-terminal-ansi-white: var(--skin-text) !important;
   --color-codex-terminal-ansi-bright-white: var(--skin-text) !important;
-  --vscode-terminal-background: var(--skin-control) !important;
+  --vscode-terminal-background: var(--skin-editor-glass) !important;
   --vscode-terminal-foreground: var(--skin-text) !important;
   --vscode-terminal-selectionBackground: color-mix(in srgb, var(--skin-accent) 24%, transparent) !important;
   --vscode-terminal-inactiveSelectionBackground: color-mix(in srgb, var(--skin-accent) 14%, transparent) !important;
   --vscode-terminalCursor-foreground: var(--skin-accent) !important;
   color: var(--skin-text) !important;
-  background: var(--skin-control) !important;
+  background: var(--skin-editor-glass) !important;
   border-color: var(--skin-border) !important;
 }
 
 html[data-codex-skin] .xterm,
 html[data-codex-skin] .xterm-viewport {
   color: var(--skin-text) !important;
-  background-color: var(--skin-control) !important;
+  background-color: var(--skin-editor-glass) !important;
 }
 
 html[data-codex-skin] pre,

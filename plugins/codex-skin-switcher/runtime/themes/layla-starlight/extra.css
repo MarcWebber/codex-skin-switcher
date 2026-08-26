@@ -19,7 +19,6 @@ html[data-codex-skin="layla-starlight"] [class*="ComposerLayoutRoot"] {
 
 html[data-codex-skin="layla-starlight"] [role="dialog"],
 html[data-codex-skin="layla-starlight"] [role="menu"] {
-  background: rgba(255, 255, 255, .92) !important;
   box-shadow: 0 20px 46px rgba(74, 83, 139, .16) !important;
 }
 
