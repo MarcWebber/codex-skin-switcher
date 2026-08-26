@@ -14,7 +14,6 @@
     "--skin-on-accent": "#283052",
     "--skin-border": "rgba(103, 112, 169, .20)",
     "--skin-font": "Avenir Next, PingFang SC, SF Pro Text, sans-serif",
-    "--skin-ui-font": "Avenir Next, PingFang SC, SF Pro Text, sans-serif",
     "--skin-display-font": "Iowan Old Style, Songti SC, STSong, serif",
     "--skin-code-font": "SFMono-Regular, Menlo, Monaco, monospace",
     "--skin-art-position": "78% 50%",

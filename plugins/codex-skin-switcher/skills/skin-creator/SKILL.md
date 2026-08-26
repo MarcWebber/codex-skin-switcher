@@ -31,7 +31,7 @@ The runtime falls back to `art.png` when optional art is absent, so ordinary the
 - Keep profile and help menu icons and layout native, but make their optional background artwork visibly present behind readable text. Inspect the actual opened Radix menu and anchor selectors to its expanded trigger and menu role; do not guess from width utility classes.
 - For the main task artwork, start `--skin-art-opacity` around `.20` to `.25`. Text surfaces must stay nearly opaque.
 - Avoid neon, high saturation, ornamental borders, dense particles, and invented narrative objects unless the prompt explicitly requests them.
-- Use `--skin-ui-font` and `--skin-display-font` for a restrained font-role change. Use installed system font stacks only; never download or bundle fonts.
+- Use `--skin-font` for the interface and optional `--skin-display-font` for restrained heading contrast. Use installed system font stacks only; never download or bundle fonts.
 
 If a distinctive character or prop language matters and the supplied references do not show enough detail, ask once for up to three reference images. If the user declines, already supplied usable references, or asks you to decide, infer a restrained direction and continue. Generate and display raster previews before applying them; pause only when the preview reveals a real unresolved choice.
 
