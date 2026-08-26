@@ -18,7 +18,6 @@ const defaultAppPath = "/Applications/ChatGPT.app";
 const watcherLabel = "com.codex-skin-switcher";
 const port = 9335;
 const node = process.execPath;
-const testedCodexVersion = "26.820.60940";
 const creatorSkillPath = path.join(root, "skills", "skin-creator", "SKILL.md");
 
 function assertMacOS() {
@@ -32,10 +31,6 @@ async function run(file, args, timeout = 20000) {
   } catch (error) {
     return { ok: false, error: String(error.stderr || error.stdout || error.message).trim() };
   }
-}
-
-async function readJson(file, fallback) {
-  try { return JSON.parse(await fs.readFile(file, "utf8")); } catch { return fallback; }
 }
 
 async function writeJson(file, value) {
@@ -121,29 +116,20 @@ async function disableWatcher() {
   await fs.rm(plistFile, { force: true });
 }
 
-async function preference() {
-  return (await readJson(preferenceFile, { preset: "native" })).preset || "native";
-}
-
 async function status(message = null) {
   const list = await themes();
-  const desiredPreset = await preference();
   const ready = await cdpReady();
   const activePreset = await liveSkin(ready);
   return {
-    ok: true,
-    platform: "darwin",
     activePreset,
-    desiredPreset,
-    port,
     cdpReady: ready,
-    appPath: await findCodexApp(),
-    testedCodexVersion,
     presets: [
       { id: "native", label: "原生", description: "Codex 原生界面" },
       ...list,
     ],
-    message: message || (ready && activePreset !== "native"
+    message: message || (!ready
+      ? "当前 Codex 未开启皮肤端口。"
+      : activePreset !== "native"
       ? `当前皮肤：${list.find((item) => item.id === activePreset)?.label || activePreset}。`
       : "当前为 Codex 原生界面。"),
   };
@@ -183,18 +169,12 @@ async function setSkin(preset) {
 const statusSchema = {
   type: "object",
   properties: {
-    ok: { type: "boolean" },
-    platform: { type: "string" },
     activePreset: { type: "string" },
-    desiredPreset: { type: "string" },
-    port: { type: "integer" },
     cdpReady: { type: "boolean" },
-    appPath: { type: ["string", "null"] },
-    testedCodexVersion: { type: "string" },
     presets: { type: "array", items: { type: "object" } },
-    message: { type: "string" },
   },
-  required: ["ok", "platform", "activePreset", "desiredPreset", "port", "cdpReady", "appPath", "testedCodexVersion", "presets", "message"],
+  required: ["activePreset", "cdpReady", "presets"],
+  additionalProperties: false,
 };
 
 const tools = [
@@ -212,7 +192,8 @@ const tools = [
 ];
 
 function toolResult(value) {
-  return { structuredContent: value, content: [{ type: "text", text: value.message }] };
+  const { message, ...structuredContent } = value;
+  return { structuredContent, content: [{ type: "text", text: message }] };
 }
 
 async function handle(method, params = {}) {
@@ -230,10 +211,9 @@ async function handle(method, params = {}) {
       if (params.name === "set_skin") return toolResult(await setSkin(String(params.arguments?.preset || "").trim()));
       throw new Error(`未知工具：${params.name}`);
     } catch (error) {
-      return { isError: true, content: [{ type: "text", text: error.message }], structuredContent: { ok: false, message: error.message } };
+      return { isError: true, content: [{ type: "text", text: error.message }] };
     }
   }
-  if (method === "prompts/list") return { prompts: [] };
   throw Object.assign(new Error(`未知方法：${method}`), { code: -32601 });
 }
 

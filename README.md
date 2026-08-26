@@ -43,10 +43,9 @@
 | --- | --- |
 | 系统 | macOS |
 | Windows | 暂不支持 |
-| Codex | `26.820.60940` |
 | Node.js | `22+`，`node` 需要在 Codex 可用的 PATH 中 |
 
-当前实现只维护上表中的 macOS 与 Codex 版本，不包含旧版、Windows 或未来版本的兼容分支。它仅额外使用一个 macOS LaunchAgent 维持带参数启动。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md) 更新共享宿主映射。
+当前实现只维护 macOS 上正在使用的 Codex 页面结构，不包含旧版、Windows 或未来版本的兼容分支。它仅额外使用一个 macOS LaunchAgent 维持带参数启动。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md) 更新共享宿主映射。
 
 ## 安装
 

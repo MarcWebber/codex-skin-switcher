@@ -5,7 +5,7 @@ description: Open, inspect, switch, restore, or customize local macOS Codex skin
 
 # Codex Skin Switcher
 
-This plugin supports macOS and Codex `26.820.60940` only. It does not carry selectors for older or future versions, and never edits the Codex application bundle or `~/.codex/config.toml`.
+This plugin supports macOS only. It targets the current Codex page structure, carries no old-version selector branches, and never edits the Codex application bundle or `~/.codex/config.toml`.
 
 ## Actions
 
