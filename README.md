@@ -76,7 +76,7 @@ MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用
 
 ### Windows 一次性启动器（本地 CDP 注入）
 
-Windows 启动器把运行时复制到 `%LOCALAPPDATA%\CodexSkinSwitcher`，用 `127.0.0.1:9335` 本地 CDP 参数启动 Codex，等待 12 秒后恢复皮肤和顶部工具栏，随后立即退出。它不创建 watcher、服务、计划任务或其他后台进程，因此关闭 Codex 后不会自动重开。
+Windows 启动器把运行时复制到 `%LOCALAPPDATA%\CodexSkinSwitcher`，用 `127.0.0.1:9335` 本地 CDP 参数启动 Codex，等待页面可注入后恢复皮肤和顶部工具栏，随后立即退出。它不创建 watcher、服务、计划任务或其他后台进程，因此关闭 Codex 后不会自动重开。
 
 启动器通过自身的 `$PSScriptRoot` 动态定位插件，不包含本机仓库路径或 Codex 版本目录。首次或日常启用均可在仓库根目录执行：
 

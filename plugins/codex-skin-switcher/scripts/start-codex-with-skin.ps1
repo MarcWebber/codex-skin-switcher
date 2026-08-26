@@ -3,29 +3,21 @@
     Start Windows Codex with a local skin, then exit.
 
 .DESCRIPTION
-    This is a one-shot launcher. It locates the repository from PSScriptRoot,
-    prepares the skin runtime under LocalAppData, starts Codex with a loopback-only
-    CDP port when needed, waits for the application to finish loading, injects the
-    skin, and exits. It does not create a watcher, service, scheduled task, or
-    background process, and it never restarts Codex after the user closes it.
-
-    The file is ASCII-only so Windows PowerShell 5.1 can parse it under any code page.
+    Copies the plugin runtime to LocalAppData, starts Codex with a loopback-only
+    CDP port when necessary, applies one skin, and exits. It creates no watcher,
+    service, scheduled task, or other background process.
 #>
 
 [CmdletBinding()]
 param(
-    # Fallback theme if Codex has no valid skin stored by the top toolbar.
     [ValidatePattern('^(native|[a-z][a-z0-9]*(?:-[a-z0-9]+)*)$')]
-    [string]$Theme = 'inkglass-aurora',
+    [string]$Theme,
 
-    # Loopback-only CDP port shared by Codex and the injector.
     [ValidateRange(1024, 65535)]
     [int]$Port = 9335,
 
-    # Optional explicit ChatGPT.exe path when automatic discovery is unavailable.
     [string]$CodexExe,
 
-    # Extra time to wait for CDP after the mandatory 12-second startup delay.
     [ValidateRange(5, 120)]
     [int]$WaitSeconds = 30
 )
@@ -33,128 +25,81 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$themeSpecified = $PSBoundParameters.ContainsKey('Theme')
+if (-not $themeSpecified) {
+    $Theme = 'inkglass-aurora'
+}
+
 function Write-Stage {
     param([Parameter(Mandatory)][string]$Message)
     Write-Host "[CodexSkinSwitcher] $Message"
 }
 
-function Get-ValidCodexPath {
+function Get-ExecutablePath {
     param([AllowNull()][string]$Candidate)
 
     if ([string]::IsNullOrWhiteSpace($Candidate)) {
         return $null
     }
-    try {
-        $item = Get-Item -LiteralPath $Candidate -ErrorAction Stop
-        if (-not $item.PSIsContainer -and $item.Name -ieq 'ChatGPT.exe') {
-            return $item.FullName
-        }
-    } catch {}
-    return $null
-}
-
-function Get-RunningCodexPath {
-    foreach ($process in @(Get-Process -Name 'ChatGPT' -ErrorAction SilentlyContinue)) {
-        try {
-            $path = Get-ValidCodexPath -Candidate $process.Path
-            if ($path -and $path -like '*OpenAI.Codex*') {
-                return $path
-            }
-        } catch {}
+    $item = Get-Item -LiteralPath $Candidate -ErrorAction SilentlyContinue
+    if ($item -and -not $item.PSIsContainer -and $item.Name -ieq 'ChatGPT.exe') {
+        return $item.FullName
     }
     return $null
 }
 
-function Test-CodexRunning {
-    return @(Get-Process -Name 'ChatGPT' -ErrorAction SilentlyContinue).Count -gt 0
+function Get-RunningCodex {
+    foreach ($process in @(Get-Process -Name 'ChatGPT' -ErrorAction SilentlyContinue)) {
+        try {
+            $path = Get-ExecutablePath -Candidate $process.Path
+        } catch {
+            continue
+        }
+        if ($path -and $path -like '*OpenAI.Codex*') {
+            return $process
+        }
+    }
+    return $null
 }
 
-function Resolve-CodexPath {
-    param(
-        [AllowNull()][string]$ExplicitPath,
-        [Parameter(Mandatory)][string]$CacheFile
-    )
+function Resolve-CodexExecutable {
+    param([AllowNull()][string]$ExplicitPath)
 
     if ($ExplicitPath) {
-        $path = Get-ValidCodexPath -Candidate $ExplicitPath
+        $path = Get-ExecutablePath -Candidate $ExplicitPath
         if (-not $path) {
             throw "-CodexExe is not a valid ChatGPT.exe file: $ExplicitPath"
         }
-        return [pscustomobject]@{ Path = $path; Source = '-CodexExe' }
+        return $path
     }
 
-    $path = Get-ValidCodexPath -Candidate $env:CODEX_APP_PATH
+    $path = Get-ExecutablePath -Candidate $env:CODEX_APP_PATH
     if ($path) {
-        return [pscustomobject]@{ Path = $path; Source = 'CODEX_APP_PATH' }
+        return $path
     }
 
-    $path = Get-RunningCodexPath
-    if ($path) {
-        return [pscustomobject]@{ Path = $path; Source = 'running Codex' }
+    $package = Get-AppxPackage -Name 'OpenAI.Codex' -ErrorAction SilentlyContinue |
+        Sort-Object Version -Descending |
+        Select-Object -First 1
+    if ($package) {
+        $path = Get-ExecutablePath -Candidate (Join-Path $package.InstallLocation 'app\ChatGPT.exe')
+        if ($path) {
+            return $path
+        }
     }
 
-    try {
-        foreach ($package in @(Get-AppxPackage -Name 'OpenAI.Codex' -ErrorAction Stop | Sort-Object Version -Descending)) {
-            $path = Get-ValidCodexPath -Candidate (Join-Path $package.InstallLocation 'app\ChatGPT.exe')
-            if ($path) {
-                return [pscustomobject]@{ Path = $path; Source = 'Appx package metadata' }
-            }
-        }
-    } catch {}
-
-    try {
-        if (Test-Path -LiteralPath $CacheFile -PathType Leaf) {
-            $cache = Get-Content -LiteralPath $CacheFile -Raw | ConvertFrom-Json
-            $path = Get-ValidCodexPath -Candidate $cache.codexExe
-            if ($path) {
-                return [pscustomobject]@{ Path = $path; Source = 'local cache' }
-            }
-        }
-    } catch {}
-
-    throw 'Codex was not found. Install Windows Codex or pass the full ChatGPT.exe path with -CodexExe.'
-}
-
-function Write-CodexPathCache {
-    param(
-        [Parameter(Mandatory)][string]$CacheFile,
-        [Parameter(Mandatory)][string]$Executable,
-        [Parameter(Mandatory)][string]$Source
-    )
-
-    $value = [ordered]@{
-        codexExe = $Executable
-        source = $Source
-        updatedAt = (Get-Date).ToUniversalTime().ToString('o')
-    } | ConvertTo-Json
-    $encoding = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($CacheFile, "$value`n", $encoding)
+    throw 'Codex was not found. Install Windows Codex, set CODEX_APP_PATH, or pass -CodexExe.'
 }
 
 function Test-CdpReady {
-    param(
-        [Parameter(Mandatory)][string]$NodeExe,
-        [Parameter(Mandatory)][string]$Engine,
-        [Parameter(Mandatory)][string]$StateRoot,
-        [Parameter(Mandatory)][int]$CdpPort
-    )
-
-    & $NodeExe $Engine 'probe' '--root' $StateRoot '--port' ([string]$CdpPort) *> $null
+    & $nodeExe $runtimeEngine 'ready' '--root' $stateRoot '--port' ([string]$Port) *> $null
     return $LASTEXITCODE -eq 0
 }
 
-function Wait-ForCdp {
-    param(
-        [Parameter(Mandatory)][string]$NodeExe,
-        [Parameter(Mandatory)][string]$Engine,
-        [Parameter(Mandatory)][string]$StateRoot,
-        [Parameter(Mandatory)][int]$CdpPort,
-        [Parameter(Mandatory)][int]$TimeoutSeconds
-    )
-
-    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+function Wait-CdpReady {
+    $deadline = (Get-Date).AddSeconds($WaitSeconds)
     do {
-        if (Test-CdpReady -NodeExe $NodeExe -Engine $Engine -StateRoot $StateRoot -CdpPort $CdpPort) {
+        if (Test-CdpReady) {
             return $true
         }
         Start-Sleep -Milliseconds 350
@@ -162,42 +107,39 @@ function Wait-ForCdp {
     return $false
 }
 
-function Get-PortListener {
-    param([Parameter(Mandatory)][int]$LocalPort)
+function Invoke-SkinRuntime {
+    param(
+        [Parameter(Mandatory)][string]$Command,
+        [string[]]$Arguments = @()
+    )
 
-    if (-not (Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue)) {
-        return $null
+    $output = & $nodeExe $runtimeEngine $Command '--root' $stateRoot '--port' ([string]$Port) @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Command failed (Node.js exit code: $LASTEXITCODE)."
     }
-    try {
-        return @(Get-NetTCPConnection -LocalPort $LocalPort -State Listen -ErrorAction Stop)[0]
-    } catch {
-        return $null
-    }
+    return $output
 }
 
 try {
-    # Resolve every repository file from this script, not from the caller directory.
-    $repositoryRoot = Split-Path -Parent $PSScriptRoot
-    $sourceRuntime = Join-Path $repositoryRoot 'runtime'
+    $pluginRoot = Split-Path -Parent $PSScriptRoot
+    $sourceRuntime = Join-Path $pluginRoot 'runtime'
     $sourceThemes = Join-Path $sourceRuntime 'themes'
     $sourceEngine = Join-Path $sourceRuntime 'skin.mjs'
     $sourceBaseCss = Join-Path $sourceRuntime 'base.css'
-    $creatorSkill = Join-Path $repositoryRoot 'skills\skin-creator\SKILL.md'
+    $creatorSkill = Join-Path $pluginRoot 'skills\skin-creator\SKILL.md'
 
     foreach ($requiredPath in @($sourceEngine, $sourceBaseCss, $sourceThemes, $creatorSkill)) {
         if (-not (Test-Path -LiteralPath $requiredPath)) {
-            throw "This script must remain under a valid repository checkout. Missing: $requiredPath"
+            throw "Incomplete plugin package. Missing: $requiredPath"
         }
     }
 
-    $nodeCommand = Get-Command 'node.exe' -ErrorAction SilentlyContinue
-    if (-not $nodeCommand) {
-        $nodeCommand = Get-Command 'node' -ErrorAction SilentlyContinue
-    }
+    $nodeCommand = Get-Command -Name 'node.exe', 'node' -ErrorAction SilentlyContinue |
+        Select-Object -First 1
     if (-not $nodeCommand) {
         throw 'Node.js was not found. Install Node.js 22 or later and ensure node is on PATH.'
     }
-    $nodeExe = if ($nodeCommand.Path) { $nodeCommand.Path } else { $nodeCommand.Source }
+    $nodeExe = $nodeCommand.Source
 
     if ([string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
         throw 'LOCALAPPDATA is empty, so the Windows runtime directory cannot be determined.'
@@ -205,15 +147,14 @@ try {
     $stateRoot = Join-Path $env:LOCALAPPDATA 'CodexSkinSwitcher'
     $runtimeRoot = Join-Path $stateRoot 'runtime'
     $themeRoot = Join-Path $stateRoot 'themes'
-    $cacheFile = Join-Path $stateRoot 'windows-launcher.json'
+    $runtimeEngine = Join-Path $runtimeRoot 'skin.mjs'
 
-    Write-Stage "Repository: $repositoryRoot"
+    Write-Stage "Plugin: $pluginRoot"
     Write-Stage "Runtime: $stateRoot"
     New-Item -ItemType Directory -Force -Path $runtimeRoot, $themeRoot | Out-Null
-    Copy-Item -LiteralPath $sourceEngine -Destination (Join-Path $runtimeRoot 'skin.mjs') -Force
+    Copy-Item -LiteralPath $sourceEngine -Destination $runtimeEngine -Force
     Copy-Item -LiteralPath $sourceBaseCss -Destination (Join-Path $runtimeRoot 'base.css') -Force
 
-    # Preserve existing theme folders because they may contain user customizations.
     foreach ($themeDirectory in @(Get-ChildItem -LiteralPath $sourceThemes -Directory)) {
         $destination = Join-Path $themeRoot $themeDirectory.Name
         if (-not (Test-Path -LiteralPath $destination)) {
@@ -221,15 +162,10 @@ try {
         }
     }
 
-    $runtimeEngine = Join-Path $runtimeRoot 'skin.mjs'
-    $cdpReady = Test-CdpReady -NodeExe $nodeExe -Engine $runtimeEngine -StateRoot $stateRoot -CdpPort $Port
-
+    $cdpReady = Test-CdpReady
     if ($Theme -eq 'native') {
         if ($cdpReady) {
-            & $nodeExe $runtimeEngine 'remove' '--root' $stateRoot '--port' ([string]$Port)
-            if ($LASTEXITCODE -ne 0) {
-                throw "Failed to restore the native interface (Node.js exit code: $LASTEXITCODE)."
-            }
+            Invoke-SkinRuntime -Command 'remove' | Out-Null
         }
         Write-Stage 'Native interface selected. No background process is running.'
         exit 0
@@ -240,46 +176,36 @@ try {
     }
 
     if (-not $cdpReady) {
-        # Do not terminate or relaunch a Codex instance that the user is currently using.
-        if (Test-CodexRunning) {
-            throw "Codex is already running without local CDP port $Port. Close Codex manually, then run this script again."
+        if (Get-RunningCodex) {
+            throw "Codex is already running without local CDP port $Port. Close Codex, then run this script again."
         }
 
-        $listener = Get-PortListener -LocalPort $Port
+        $listener = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
+            Select-Object -First 1
         if ($listener) {
-            throw "Port $Port is already listened to by process $($listener.OwningProcess). Choose a free port with -Port."
+            throw "Port $Port is already used by process $($listener.OwningProcess). Choose another port with -Port."
         }
 
-        $resolvedCodex = Resolve-CodexPath -ExplicitPath $CodexExe -CacheFile $cacheFile
-        Write-CodexPathCache -CacheFile $cacheFile -Executable $resolvedCodex.Path -Source $resolvedCodex.Source
-        Write-Stage "Codex: $($resolvedCodex.Path) ($($resolvedCodex.Source))"
-        Write-Stage "Launching Codex with 127.0.0.1:$Port..."
-        Start-Process -FilePath $resolvedCodex.Path -ArgumentList @(
+        $resolvedCodex = Resolve-CodexExecutable -ExplicitPath $CodexExe
+        Write-Stage "Launching: $resolvedCodex"
+        Start-Process -FilePath $resolvedCodex -ArgumentList @(
             "--remote-debugging-port=$Port",
             '--remote-debugging-address=127.0.0.1'
         ) -ErrorAction Stop | Out-Null
 
-        # Keep the proven macOS delay: a CDP target appears before the page is safe
-        # for document.body toolbar injection. This launcher waits, injects, and exits.
-        Write-Stage 'Waiting 12 seconds for Codex to finish loading...'
-        Start-Sleep -Seconds 12
-        if (-not (Wait-ForCdp -NodeExe $nodeExe -Engine $runtimeEngine -StateRoot $stateRoot -CdpPort $Port -TimeoutSeconds $WaitSeconds)) {
-            throw "The Codex CDP page did not appear on port $Port within the allowed time."
+        if (-not (Wait-CdpReady)) {
+            throw "Codex did not become ready on port $Port within $WaitSeconds seconds."
         }
     }
 
-    Write-Stage "Applying skin (fallback theme: $Theme)..."
-    & $nodeExe $runtimeEngine 'apply' '--resume' '--root' $stateRoot '--port' ([string]$Port) '--theme' $Theme '--creator-skill-path' $creatorSkill
-    if ($LASTEXITCODE -ne 0) {
-        throw "Skin injection failed (Node.js exit code: $LASTEXITCODE)."
+    $applyArguments = @('--theme', $Theme, '--creator-skill-path', $creatorSkill)
+    if (-not $themeSpecified) {
+        $applyArguments = @('--resume') + $applyArguments
     }
+    Invoke-SkinRuntime -Command 'apply' -Arguments $applyArguments | Out-Null
 
-    $inspection = & $nodeExe $runtimeEngine 'inspect' '--root' $stateRoot '--port' ([string]$Port)
-    if ($LASTEXITCODE -ne 0) {
-        throw "Skin status inspection failed (Node.js exit code: $LASTEXITCODE)."
-    }
-    $status = $inspection | Out-String | ConvertFrom-Json
-    Write-Stage "Applied skin: $($status.id). The launcher is exiting; Codex will not be restarted when you close it."
+    $status = Invoke-SkinRuntime -Command 'inspect' | Out-String | ConvertFrom-Json
+    Write-Stage "Applied skin: $($status.id). The launcher is exiting."
 } catch {
     Write-Error "[CodexSkinSwitcher] $($_.Exception.Message)"
     exit 1

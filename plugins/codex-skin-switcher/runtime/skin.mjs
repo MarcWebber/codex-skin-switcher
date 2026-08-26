@@ -27,6 +27,11 @@ async function readJson(file) {
   return JSON.parse(await fs.readFile(file, "utf8"));
 }
 
+function assetUrl(file) {
+  const normalized = file.split(path.sep).join("/");
+  return `app://fs/@fs${encodeURI(normalized.startsWith("/") ? normalized : `/${normalized}`)}`;
+}
+
 async function listThemes() {
   const root = path.join(stateRoot, "themes");
   const entries = await fs.readdir(root, { withFileTypes: true }).catch(() => []);
@@ -81,13 +86,13 @@ async function loadTheme(id) {
   const homeCardD = await fs.readFile(homeCardDFile).catch(() => null);
   const base = await fs.readFile(path.join(stateRoot, "runtime", "base.css"), "utf8");
   const vars = Object.entries(data.vars).map(([key, value]) => `${key}:${value}`).join(";");
-  const artUrl = `app://fs/@fs${encodeURI(artFile)}`;
-  const profileArtUrl = profileArt ? `app://fs/@fs${encodeURI(profileArtFile)}` : artUrl;
-  const helpArtUrl = helpArt ? `app://fs/@fs${encodeURI(helpArtFile)}` : artUrl;
-  const homeCardAUrl = homeCardA ? `app://fs/@fs${encodeURI(homeCardAFile)}` : artUrl;
-  const homeCardBUrl = homeCardB ? `app://fs/@fs${encodeURI(homeCardBFile)}` : homeCardAUrl;
-  const homeCardCUrl = homeCardC ? `app://fs/@fs${encodeURI(homeCardCFile)}` : homeCardBUrl;
-  const homeCardDUrl = homeCardD ? `app://fs/@fs${encodeURI(homeCardDFile)}` : homeCardCUrl;
+  const artUrl = assetUrl(artFile);
+  const profileArtUrl = profileArt ? assetUrl(profileArtFile) : artUrl;
+  const helpArtUrl = helpArt ? assetUrl(helpArtFile) : artUrl;
+  const homeCardAUrl = homeCardA ? assetUrl(homeCardAFile) : artUrl;
+  const homeCardBUrl = homeCardB ? assetUrl(homeCardBFile) : homeCardAUrl;
+  const homeCardCUrl = homeCardC ? assetUrl(homeCardCFile) : homeCardBUrl;
+  const homeCardDUrl = homeCardD ? assetUrl(homeCardDFile) : homeCardCUrl;
   const css = `${base}\nhtml[data-codex-skin="${id}"]{${vars};--skin-art:url("${artUrl}");--skin-profile-art:url("${profileArtUrl}");--skin-help-art:url("${helpArtUrl}");--skin-home-card-art-a:url("${homeCardAUrl}");--skin-home-card-art-b:url("${homeCardBUrl}");--skin-home-card-art-c:url("${homeCardCUrl}");--skin-home-card-art-d:url("${homeCardDUrl}")}\n${extra}`;
   const hash = crypto.createHash("sha256").update(css).update(art);
   if (profileArt) hash.update(profileArt);
@@ -291,10 +296,19 @@ async function inspect() {
   return evaluate(`({ id: window.__CODEX_SKIN__?.id || "native", fingerprint: window.__CODEX_SKIN__?.fingerprint || null })`);
 }
 
+async function ready() {
+  try {
+    return Boolean(await evaluate("Boolean(document.body)"));
+  } catch {
+    return false;
+  }
+}
+
 if (command === "themes") console.log(JSON.stringify(await listThemes(), null, 2));
 else if (command === "validate") console.log(JSON.stringify(await validate(option("--theme"))));
 else if (command === "probe") process.exit((await targets()).some(isMain) ? 0 : 1);
+else if (command === "ready") process.exit(await ready() ? 0 : 1);
 else if (command === "inspect") console.log(JSON.stringify(await inspect()));
 else if (command === "apply") console.log(JSON.stringify(await apply(option("--theme"))));
 else if (command === "remove") console.log(JSON.stringify(await remove()));
-else throw new Error("用法：skin.mjs themes|validate|probe|inspect|apply|remove");
+else throw new Error("用法：skin.mjs themes|validate|probe|ready|inspect|apply|remove");
