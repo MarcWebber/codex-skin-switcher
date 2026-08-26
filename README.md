@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/logo.svg" width="360" alt="Codex Skin Switcher">
+  <img src="./plugins/codex-skin-switcher/assets/logo.svg" width="360" alt="Codex Skin Switcher">
 </p>
 
 <p align="center">
@@ -10,7 +10,7 @@
   <strong>macOS plugin</strong> · <strong>Windows launcher</strong> · <strong>Local assets</strong> · <strong>Native rollback</strong>
 </p>
 
-![莱依拉星梦主题主页](./assets/screenshots/layla-home.png)
+![莱依拉星梦主题主页](./plugins/codex-skin-switcher/assets/screenshots/layla-home.png)
 
 <p align="center">
   莱依拉星梦示例主题：背景、主页建议卡片、侧栏与输入区使用同一套低饱和视觉语言。
@@ -19,11 +19,11 @@
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/skin-menu.png" alt="Codex 顶部皮肤切换菜单">
+      <img src="./plugins/codex-skin-switcher/assets/screenshots/skin-menu.png" alt="Codex 顶部皮肤切换菜单">
       <br><sub>顶部切换菜单：在原生、墨光、纸灯和莱依拉星梦之间切换</sub>
     </td>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/help-menu.png" alt="莱依拉主题下的帮助菜单">
+      <img src="./plugins/codex-skin-switcher/assets/screenshots/help-menu.png" alt="莱依拉主题下的帮助菜单">
       <br><sub>子页面适配：帮助菜单保留原生结构并应用主题插图</sub>
     </td>
   </tr>
@@ -35,37 +35,27 @@
 - 通过 `skin-creator` 输入一句提示词，生成背景、配色、字体和主题补充样式。
 - 覆盖任务页、消息框、输入区、菜单、主页按钮、终端、文件与 Diff 查看器、设置页。
 - 默认只读取本地主题文件，不修改 Codex 应用包，也不修改 `~/.codex/config.toml`。
-- 启动或注入失败时停止自动重试，保留原生界面，并写入可读的恢复信息。
+- 一个最小 Watcher 只负责在下一次启动时补上本机 CDP 参数并恢复主题；没有 FPS 侦测或安装位置扫描。
 
 ## 兼容性
 
 | 项目 | 支持范围 |
 | --- | --- |
 | 系统 | macOS（插件完整流程）；Windows 11（源码一次性启动器） |
-| Codex | macOS `26.820.60940`；Windows 当前本机 `26.818.8289.0` 已验证注入 |
 | Node.js | `22+`，`node` 需要在 Codex 可用的 PATH 中 |
 
-macOS 插件只维护上表中的目标版本，不包含旧版或未来版本的兼容分支。Windows 启动器复用同一套 CDP 注入运行时与主题映射。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./docs/TROUBLESHOOTING.md) 更新共享宿主映射。
+macOS 插件只维护当前 Codex 页面结构，不包含旧版或未来版本的兼容分支。Windows 启动器复用同一套 CDP 注入运行时与主题映射。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md) 更新共享宿主映射。
 
 ## 安装
 
-### 从源码使用
-
 ```bash
-git clone https://github.com/MarcWebber/codex-skin-switcher.git ~/plugins/codex-skin-switcher
+codex plugin marketplace add MarcWebber/codex-skin-switcher
+codex plugin add codex-skin-switcher@marcwebber
 ```
 
-将仓库注册到本机 personal marketplace 后执行：
+第一条命令注册这个 Git marketplace，第二条命令安装插件。安装或升级后，新建一个 Codex 任务，让新的 Skill 与 MCP 工具进入当前会话。
 
-```bash
-codex plugin add codex-skin-switcher@personal
-```
-
-安装或升级后，新建一个 Codex 任务，让新的 Skill 与 MCP 工具进入当前会话。
-
-当前仓库首先作为源码与本地插件发布。公开 Git marketplace 安装入口会在仓库加入 marketplace 清单后提供；在此之前，不要把上述 personal marketplace 命令理解为官方插件目录安装。
-
-MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。Codex 应用优先读取 `CODEX_APP_PATH`，否则校验 `/Applications/ChatGPT.app` 或 Spotlight 找到的 bundle id `com.openai.codex`。
+MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用位置只检查 `/Applications/ChatGPT.app`；如果你确实安装在别处，可额外设置一个 `CODEX_APP_PATH`。首次选择皮肤时，如果当前 Codex 没有开启本机调试端口，正常退出一次即可；Watcher 会用 `open` 带上 `9335` 参数重开并恢复主题。
 
 ## 使用示例
 
@@ -82,41 +72,41 @@ MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。Codex 
 顶部工具可以折叠为调色板图标；再次点击即可展开。
 “创建皮肤”会在空输入框中插入蓝色的原生 `skin-creator` Skill mention，并留下可编辑的“风格：”；补充完风格后再由你手动发送。
 
-![原生 Skin Creator mention 与参考图](./assets/screenshots/skin-creator.png)
+![原生 Skin Creator mention 与参考图](./plugins/codex-skin-switcher/assets/screenshots/skin-creator.png)
 
 ### Windows 一次性启动器（本地 CDP 注入）
 
 Windows 启动器把运行时复制到 `%LOCALAPPDATA%\CodexSkinSwitcher`，用 `127.0.0.1:9335` 本地 CDP 参数启动 Codex，等待 12 秒后恢复皮肤和顶部工具栏，随后立即退出。它不创建 watcher、服务、计划任务或其他后台进程，因此关闭 Codex 后不会自动重开。
 
-启动器通过自身的 `$PSScriptRoot` 动态定位仓库，不包含本机仓库路径或 Codex 版本目录。首次或日常启用均可在仓库根目录执行：
+启动器通过自身的 `$PSScriptRoot` 动态定位插件，不包含本机仓库路径或 Codex 版本目录。首次或日常启用均可在仓库根目录执行：
 
 ```powershell
-.\scripts\start-codex-with-skin.ps1
+.\plugins\codex-skin-switcher\scripts\start-codex-with-skin.ps1
 ```
 
 也可以双击：
 
 ```text
-scripts\start-codex-with-skin.cmd
+plugins\codex-skin-switcher\scripts\start-codex-with-skin.cmd
 ```
 
 指定主题或端口：
 
 ```powershell
-.\scripts\start-codex-with-skin.ps1 -Theme paper-lantern
-.\scripts\start-codex-with-skin.ps1 -Port 9444
+.\plugins\codex-skin-switcher\scripts\start-codex-with-skin.ps1 -Theme paper-lantern
+.\plugins\codex-skin-switcher\scripts\start-codex-with-skin.ps1 -Port 9444
 ```
 
 启动器按 `-CodexExe`、`CODEX_APP_PATH`、运行中的 Codex、Appx 安装信息和本地缓存依次查找 `ChatGPT.exe`。自动发现失败时，可以显式提供路径：
 
 ```powershell
-.\scripts\start-codex-with-skin.ps1 -CodexExe 'C:\路径\到\ChatGPT.exe'
+.\plugins\codex-skin-switcher\scripts\start-codex-with-skin.ps1 -CodexExe 'C:\路径\到\ChatGPT.exe'
 ```
 
 恢复原生界面：
 
 ```powershell
-.\scripts\start-codex-with-skin.ps1 -Theme native
+.\plugins\codex-skin-switcher\scripts\start-codex-with-skin.ps1 -Theme native
 ```
 
 如果 Codex 已经普通启动且没有开放所选 CDP 端口，脚本会提示你手动关闭后重试，不会强制结束进程。脚本不修改 Codex 应用包或 `~/.codex/config.toml`，也不会在后台自动重试。
@@ -139,7 +129,7 @@ scripts\start-codex-with-skin.cmd
 
 | 主题 | 说明 |
 | --- | --- |
-| 原生 | 移除注入并停用自动换肤 |
+| 原生 | 移除当前界面的主题注入 |
 | 莱依拉星梦 | 月白、雾蓝、星轨背景，带菜单子图和四张不同的主页按钮插图 |
 | 墨璃极光 | 深色玻璃与冷色极光 |
 | 纸灯 | 米白纸张与暖色灯光 |
@@ -183,22 +173,16 @@ home-card-d.png
 恢复 Codex 原生界面
 ```
 
-自动启动失败时，插件不会循环退出或重开 Codex。它会停止 watcher、保留当前界面，并把原因写入：
-
-```text
-~/Library/Application Support/CodexSkinSwitcher/recovery.json
-```
-
-完整恢复命令、10 FPS 历史问题、背景不显示、白字白按钮、菜单与子页面失配等处理方式见 [Troubleshooting](./docs/TROUBLESHOOTING.md)。
+Watcher 不会强制退出正在使用的 Codex；它只等待正常退出，并在下一次启动时补上本机 CDP 参数。注入失败后会提示一次、删除自己的 LaunchAgent 并停止；此后从 Dock 正常打开 Codex，不再携带调试参数。完整恢复命令、10 FPS 历史问题、背景不显示、白字白按钮、菜单与子页面失配等处理方式见 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md)。
 
 ## 隐私与安全
 
-- 主题、偏好和恢复信息只保存在本机。
+- 主题和偏好只保存在本机。
 - 不上传对话、登录态、项目内容或主题图片。
 - 不包含分析统计与遥测。
 - CDP 只绑定 `127.0.0.1:9335`；不要将它改成局域网或公网地址。
 
-详见 [Privacy](./docs/PRIVACY.md)。实现结构和技术边界见 [Implementation](./docs/IMPLEMENTATION.md)。
+详见 [Privacy](./plugins/codex-skin-switcher/docs/PRIVACY.md)。实现结构和技术边界见 [Implementation](./plugins/codex-skin-switcher/docs/IMPLEMENTATION.md)。
 
 ## License
 

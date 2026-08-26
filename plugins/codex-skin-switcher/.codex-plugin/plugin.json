@@ -1,6 +1,6 @@
 {
   "name": "codex-skin-switcher",
-  "version": "0.1.1+codex.20260826100904",
+  "version": "0.1.1+codex.20260826153057",
   "description": "Minimal macOS Codex skin switching, prompt-based theme creation, and native rollback.",
   "author": {
     "name": "Marc Webber"
@@ -18,7 +18,7 @@
   "interface": {
     "displayName": "Codex Skin Switcher",
     "shortDescription": "Switch Codex skins or return to Native in one click.",
-    "longDescription": "A macOS-only skin switcher for Codex 26.820.60940 with a collapsible in-app control, prompt-created three-file themes, local artwork, native rollback, and safe failure recovery.",
+    "longDescription": "A macOS-only Codex skin switcher with a collapsible in-app control, prompt-created three-file themes, local artwork, native rollback, and a minimal launch watcher.",
     "developerName": "Marc Webber",
     "category": "Developer Tools",
     "capabilities": [

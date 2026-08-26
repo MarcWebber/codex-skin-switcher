@@ -13,14 +13,16 @@ const stateRoot = path.join(os.homedir(), "Library", "Application Support", "Cod
 const runtime = path.join(stateRoot, "runtime");
 const themesRoot = path.join(stateRoot, "themes");
 const preferenceFile = path.join(stateRoot, "preference.json");
-const recoveryFile = path.join(stateRoot, "recovery.json");
 const plistFile = path.join(os.homedir(), "Library", "LaunchAgents", "com.codex-skin-switcher.plist");
-const label = "com.codex-skin-switcher";
+const defaultAppPath = "/Applications/ChatGPT.app";
+const watcherLabel = "com.codex-skin-switcher";
 const port = 9335;
 const node = process.execPath;
-const bundleId = "com.openai.codex";
-const testedCodexVersion = "26.820.60940";
 const creatorSkillPath = path.join(root, "skills", "skin-creator", "SKILL.md");
+
+function assertMacOS() {
+  if (process.platform !== "darwin") throw new Error("Codex Skin Switcher 当前仅支持 macOS。");
+}
 
 async function run(file, args, timeout = 20000) {
   try {
@@ -31,10 +33,6 @@ async function run(file, args, timeout = 20000) {
   }
 }
 
-async function readJson(file, fallback = null) {
-  try { return JSON.parse(await fs.readFile(file, "utf8")); } catch { return fallback; }
-}
-
 async function writeJson(file, value) {
   await fs.mkdir(path.dirname(file), { recursive: true });
   const next = `${file}.next-${process.pid}`;
@@ -42,33 +40,12 @@ async function writeJson(file, value) {
   await fs.rename(next, file);
 }
 
-async function isCodexApp(candidate) {
-  if (!candidate || !candidate.endsWith(".app")) return false;
-  const plist = path.join(candidate, "Contents", "Info.plist");
-  if (!await fs.stat(plist).catch(() => null)) return false;
-  const result = await run("/usr/libexec/PlistBuddy", ["-c", "Print :CFBundleIdentifier", plist], 2000);
-  return result.ok && result.stdout === bundleId;
-}
-
 async function findCodexApp() {
-  const candidates = [
-    process.env.CODEX_APP_PATH,
-    "/Applications/ChatGPT.app",
-  ].filter(Boolean);
-  const located = await run("/usr/bin/mdfind", [`kMDItemCFBundleIdentifier == '${bundleId}'`], 3000);
-  if (located.ok) candidates.push(...located.stdout.split("\n").map((item) => item.trim()).filter(Boolean));
-  for (const candidate of [...new Set(candidates)]) {
-    if (await isCodexApp(candidate)) return candidate;
+  const candidates = [process.env.CODEX_APP_PATH, defaultAppPath].filter(Boolean);
+  for (const candidate of new Set(candidates)) {
+    if (await fs.stat(candidate).catch(() => null)) return candidate;
   }
   return null;
-}
-
-async function recordRecovery(code, message) {
-  await writeJson(recoveryFile, { code, message, at: new Date().toISOString() });
-}
-
-async function clearRecovery() {
-  await fs.rm(recoveryFile, { force: true });
 }
 
 async function prepare() {
@@ -88,20 +65,23 @@ async function prepare() {
   }
 }
 
+async function callRuntime(command, args = [], timeout = 5000) {
+  return run(node, [path.join(runtime, "skin.mjs"), command, "--root", stateRoot, "--port", String(port), ...args], timeout);
+}
+
 async function themes() {
-  const result = await run(node, [path.join(runtime, "skin.mjs"), "themes", "--root", stateRoot]);
+  const result = await callRuntime("themes");
   if (!result.ok) throw new Error(result.error);
   return JSON.parse(result.stdout);
 }
 
 async function cdpReady() {
-  const result = await run(node, [path.join(runtime, "skin.mjs"), "probe", "--root", stateRoot, "--port", String(port)], 3000);
-  return result.ok;
+  return (await callRuntime("probe", [], 3000)).ok;
 }
 
-async function liveSkin() {
-  if (!await cdpReady()) return "native";
-  const result = await run(node, [path.join(runtime, "skin.mjs"), "inspect", "--root", stateRoot, "--port", String(port)], 5000);
+async function liveSkin(ready) {
+  if (!ready) return "native";
+  const result = await callRuntime("inspect");
   if (!result.ok) return "native";
   return JSON.parse(result.stdout).id || "native";
 }
@@ -115,10 +95,10 @@ async function enableWatcher(app) {
   const plist = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-<key>Label</key><string>${label}</string>
+<key>Label</key><string>${watcherLabel}</string>
 <key>ProgramArguments</key><array>
 <string>${xml(path.join(runtime, "watch.sh"))}</string>
-<string>${xml(stateRoot)}</string><string>${xml(node)}</string><string>${xml(app)}</string><string>${port}</string><string>${xml(creatorSkillPath)}</string>
+<string>${xml(stateRoot)}</string><string>${xml(node)}</string><string>${xml(app)}</string><string>${port}</string><string>${xml(creatorSkillPath)}</string><string>${xml(plistFile)}</string>
 </array>
 <key>RunAtLoad</key><true/>
 <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
@@ -126,81 +106,62 @@ async function enableWatcher(app) {
 </dict></plist>\n`;
   await fs.writeFile(plistFile, plist);
   const domain = `gui/${process.getuid()}`;
-  await run("/bin/launchctl", ["bootout", `${domain}/${label}`], 5000);
+  await run("/bin/launchctl", ["bootout", `${domain}/${watcherLabel}`], 5000);
   const started = await run("/bin/launchctl", ["bootstrap", domain, plistFile], 5000);
-  if (!started.ok && !started.error.includes("service already loaded")) throw new Error(started.error);
+  if (!started.ok) throw new Error(`Watcher 启动失败：${started.error}`);
 }
 
 async function disableWatcher() {
-  await run("/bin/launchctl", ["bootout", `gui/${process.getuid()}/${label}`], 5000);
+  await run("/bin/launchctl", ["bootout", `gui/${process.getuid()}/${watcherLabel}`], 5000);
   await fs.rm(plistFile, { force: true });
-}
-
-async function preference() {
-  return (await readJson(preferenceFile, { preset: "native" })).preset || "native";
 }
 
 async function status(message = null) {
   const list = await themes();
-  const desiredPreset = await preference();
   const ready = await cdpReady();
-  const activePreset = ready ? await liveSkin() : "native";
-  const appPath = await findCodexApp();
-  const recovery = await readJson(recoveryFile, null);
+  const activePreset = await liveSkin(ready);
   return {
-    ok: true,
-    platform: "darwin",
     activePreset,
-    desiredPreset,
-    port,
     cdpReady: ready,
-    runtimeInstalled: true,
-    restartRequired: desiredPreset !== "native" && !ready,
-    appPath,
-    testedCodexVersion,
-    degraded: Boolean(recovery),
-    recovery,
     presets: [
       { id: "native", label: "原生", description: "Codex 原生界面" },
       ...list,
     ],
-    message: message || recovery?.message || (ready && activePreset !== "native" ? `当前皮肤：${list.find((item) => item.id === activePreset)?.label || activePreset}。` : "当前为 Codex 原生界面。"),
+    message: message || (!ready
+      ? "当前 Codex 未开启皮肤端口。"
+      : activePreset !== "native"
+      ? `当前皮肤：${list.find((item) => item.id === activePreset)?.label || activePreset}。`
+      : "当前为 Codex 原生界面。"),
   };
 }
 
 async function setSkin(preset) {
   if (preset === "native") {
-    await writeJson(preferenceFile, { preset: "native" });
-    if (await cdpReady()) await run(node, [path.join(runtime, "skin.mjs"), "remove", "--root", stateRoot, "--port", String(port)]);
+    await writeJson(preferenceFile, { preset });
+    if (await cdpReady()) {
+      const removed = await callRuntime("remove");
+      if (!removed.ok) throw new Error(removed.error);
+    }
     await disableWatcher();
-    await clearRecovery();
-    return status("已恢复 Codex 原生界面；自动换肤也已关闭。");
+    return status("已恢复 Codex 原生界面，Watcher 已关闭。");
   }
+
   const selected = (await themes()).find((item) => item.id === preset);
   if (!selected) throw new Error(`未知皮肤：${preset}`);
   await writeJson(preferenceFile, { preset });
-  await clearRecovery();
+
   const app = await findCodexApp();
-  const ready = await cdpReady();
-  if (!app) {
-    await disableWatcher();
-    const recoveryMessage = `未找到 bundle id 为 ${bundleId} 的 Codex 应用；已停止自动启动，当前界面保持不变。可设置 CODEX_APP_PATH 后重试。`;
-    await recordRecovery("codex-app-not-found", recoveryMessage);
-    if (!ready) return status(recoveryMessage);
-  } else {
-    try {
-      await enableWatcher(app);
-    } catch (error) {
-      const recoveryMessage = `自动换肤服务启动失败，已降级为本次会话切换：${error.message}`;
-      await recordRecovery("watcher-start-failed", recoveryMessage);
-    }
+  if (!app) return status(`已保存 ${selected.label}，但未找到 ${defaultAppPath}；如安装在其他位置，请设置 CODEX_APP_PATH。`);
+  await enableWatcher(app);
+
+  if (!await cdpReady()) {
+    return status(`已保存 ${selected.label}；正常退出 Codex 后，Watcher 会带本机调试参数重开一次并恢复主题。`);
   }
-  if (!ready) return status(`已保存 ${selected.label}；正常退出 Codex 后，插件会通过 LaunchServices 安全重开一次。失败时保留原生界面，不会循环重启。`);
-  const applied = await run(node, [path.join(runtime, "skin.mjs"), "apply", "--root", stateRoot, "--port", String(port), "--theme", preset, "--creator-skill-path", creatorSkillPath], 12000);
+
+  const applied = await callRuntime("apply", ["--theme", preset, "--creator-skill-path", creatorSkillPath], 12000);
   if (!applied.ok) {
-    const recoveryMessage = `皮肤注入失败，已保留当前界面：${applied.error}`;
-    await recordRecovery("skin-apply-failed", recoveryMessage);
-    return status(recoveryMessage);
+    await disableWatcher();
+    throw new Error(`皮肤注入失败，Watcher 已关闭；下次请正常打开 Codex：${applied.error}`);
   }
   return status(`已切换到 ${selected.label}。`);
 }
@@ -208,13 +169,12 @@ async function setSkin(preset) {
 const statusSchema = {
   type: "object",
   properties: {
-    ok: { type: "boolean" }, activePreset: { type: "string" }, desiredPreset: { type: "string" },
-    port: { type: "integer" }, cdpReady: { type: "boolean" }, runtimeInstalled: { type: "boolean" },
-    restartRequired: { type: "boolean" }, appPath: { type: ["string", "null"] }, testedCodexVersion: { type: "string" },
-    degraded: { type: "boolean" }, recovery: { type: ["object", "null"] },
-    presets: { type: "array", items: { type: "object" } }, message: { type: "string" },
+    activePreset: { type: "string" },
+    cdpReady: { type: "boolean" },
+    presets: { type: "array", items: { type: "object" } },
   },
-  required: ["ok", "activePreset", "desiredPreset", "port", "cdpReady", "runtimeInstalled", "restartRequired", "appPath", "testedCodexVersion", "degraded", "recovery", "presets", "message"],
+  required: ["activePreset", "cdpReady", "presets"],
+  additionalProperties: false,
 };
 
 const tools = [
@@ -232,10 +192,8 @@ const tools = [
 ];
 
 function toolResult(value) {
-  return {
-    structuredContent: value,
-    content: [{ type: "text", text: value.message }],
-  };
+  const { message, ...structuredContent } = value;
+  return { structuredContent, content: [{ type: "text", text: message }] };
 }
 
 async function handle(method, params = {}) {
@@ -248,18 +206,18 @@ async function handle(method, params = {}) {
   if (method === "tools/list") return { tools };
   if (method === "tools/call") {
     try {
+      assertMacOS();
       if (params.name === "get_skin_status") return toolResult(await status());
       if (params.name === "set_skin") return toolResult(await setSkin(String(params.arguments?.preset || "").trim()));
       throw new Error(`未知工具：${params.name}`);
     } catch (error) {
-      return { isError: true, content: [{ type: "text", text: error.message }], structuredContent: { ok: false, message: error.message } };
+      return { isError: true, content: [{ type: "text", text: error.message }] };
     }
   }
-  if (method === "prompts/list") return { prompts: [] };
   throw Object.assign(new Error(`未知方法：${method}`), { code: -32601 });
 }
 
-await prepare();
+if (process.platform === "darwin") await prepare();
 const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
 for await (const line of input) {
   if (!line.trim()) continue;

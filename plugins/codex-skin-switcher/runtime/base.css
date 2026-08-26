@@ -1,8 +1,6 @@
 html[data-codex-skin] {
   color-scheme: var(--skin-color-scheme, light) !important;
   background: var(--skin-canvas) !important;
-  --skin-ui-font: var(--skin-font);
-  --skin-display-font: var(--skin-ui-font);
   --codex-base-surface: var(--skin-surface) !important;
   --color-background-surface-under: var(--skin-canvas) !important;
   --color-background-surface: var(--skin-surface) !important;
@@ -84,7 +82,7 @@ html[data-codex-skin] {
   --vscode-menubar-selectionBackground: color-mix(in srgb, var(--skin-accent) 10%, transparent) !important;
   --vscode-menubar-selectionForeground: var(--skin-text) !important;
   --vscode-button-background: var(--skin-accent) !important;
-  --vscode-button-foreground: var(--skin-on-accent, #fff) !important;
+  --vscode-button-foreground: var(--skin-on-accent, var(--skin-canvas)) !important;
   --vscode-button-hoverBackground: color-mix(in srgb, var(--skin-accent) 88%, white) !important;
   --vscode-button-secondaryBackground: var(--skin-control) !important;
   --vscode-button-secondaryForeground: var(--skin-text) !important;
@@ -136,7 +134,7 @@ html[data-codex-skin] {
 html[data-codex-skin] body {
   color: var(--skin-text) !important;
   background: var(--skin-canvas) !important;
-  font-family: var(--skin-ui-font, var(--skin-font)) !important;
+  font-family: var(--skin-font) !important;
 }
 
 html[data-codex-skin] button,
@@ -144,18 +142,18 @@ html[data-codex-skin] input,
 html[data-codex-skin] textarea,
 html[data-codex-skin] select {
   color: var(--skin-text) !important;
-  font-family: var(--skin-ui-font, var(--skin-font)) !important;
+  font-family: var(--skin-font) !important;
 }
 
 html[data-codex-skin] h1,
 html[data-codex-skin] h2,
 html[data-codex-skin] h3,
 html[data-codex-skin] [data-feature="game-source"] {
-  font-family: var(--skin-display-font, var(--skin-ui-font, var(--skin-font))) !important;
+  font-family: var(--skin-display-font, var(--skin-font)) !important;
 }
 
 html[data-codex-skin] button[class*="bg-primary-solid"] {
-  color: var(--skin-on-accent, #fff) !important;
+  color: var(--skin-on-accent, var(--skin-canvas)) !important;
   background: var(--skin-accent) !important;
   border-color: color-mix(in srgb, var(--skin-accent) 72%, var(--skin-border)) !important;
 }
@@ -199,6 +197,9 @@ html[data-codex-skin] main[class*="MainContentSurface"] {
   isolation: isolate !important;
   color: var(--skin-text) !important;
   background: var(--skin-surface) !important;
+  border: 1px solid var(--skin-border) !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
 }
 
 html[data-codex-skin] main[class*="MainContentSurface"]::before {
@@ -220,7 +221,8 @@ html[data-codex-skin] [class*="bg-text/5"] {
 html[data-codex-skin] [class*="ComposerLayoutRoot"] {
   color: var(--skin-text) !important;
   background: var(--skin-control) !important;
-  border-color: var(--skin-border) !important;
+  border: 1px solid var(--skin-border) !important;
+  border-radius: 24px !important;
 }
 
 html[data-codex-skin] [role="dialog"],
@@ -271,10 +273,8 @@ html[data-codex-skin] [data-codex-terminal="true"][data-codex-xterm="true"] {
   --codex-base-surface: var(--skin-control) !important;
   --color-codex-terminal-background: var(--skin-control) !important;
   --color-codex-terminal-foreground: var(--skin-text) !important;
-  --color-codex-terminal-selection-background: color-mix(in srgb, var(--skin-accent) 24%, transparent) !important;
   --color-codex-terminal-selection: color-mix(in srgb, var(--skin-accent) 24%, transparent) !important;
   --color-codex-terminal-selection-inactive: color-mix(in srgb, var(--skin-accent) 14%, transparent) !important;
-  --color-codex-terminal-cursor: var(--skin-accent) !important;
   --color-codex-terminal-ansi-black: color-mix(in srgb, var(--skin-text) 72%, var(--skin-canvas)) !important;
   --color-codex-terminal-ansi-bright-black: var(--skin-muted) !important;
   --color-codex-terminal-ansi-red: #c85b70 !important;
@@ -313,4 +313,9 @@ html[data-codex-skin] kbd,
 html[data-codex-skin] samp,
 html[data-codex-skin] [class*="font-mono"] {
   font-family: var(--skin-code-font) !important;
+}
+
+html[data-codex-skin] pre,
+html[data-codex-skin] code {
+  border-color: var(--skin-border) !important;
 }

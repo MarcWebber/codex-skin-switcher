@@ -4,11 +4,19 @@ Codex Skin Switcher 是本地 macOS 插件。
 
 ## 本地数据
 
-插件在下面的目录保存主题、当前选择和故障恢复信息：
+插件在下面的目录保存主题、当前选择和运行时副本：
 
 ```text
 ~/Library/Application Support/CodexSkinSwitcher/
 ```
+
+启用非原生主题时，插件还会创建本机 LaunchAgent 文件：
+
+```text
+~/Library/LaunchAgents/com.codex-skin-switcher.plist
+```
+
+选择原生主题或主题恢复失败时会删除该文件。
 
 这些文件不会由插件上传。插件不读取或发送 Codex 对话、登录态、项目文件与账号信息，也不包含分析统计、遥测或广告代码。
 
