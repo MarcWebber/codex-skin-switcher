@@ -1,6 +1,6 @@
 # Troubleshooting
 
-本文记录真实遇到过的问题。当前版本没有后台 watcher、自动重启或 FPS 侦测。
+本文记录真实遇到过的问题。当前版本只有一个负责启动参数与主题恢复的最小 Watcher，没有 FPS 侦测或安装位置扫描。
 
 ## 先恢复原生界面
 
@@ -10,45 +10,39 @@
 恢复 Codex 原生界面
 ```
 
-如果插件入口不可用，可以正常退出 Codex，再把偏好文件改名留作备份：
+如果插件入口不可用，可以正常退出 Codex，再停用 Watcher，并把相关文件改名留作备份：
 
 ```bash
+launchctl bootout "gui/$(id -u)/com.codex-skin-switcher" 2>/dev/null || true
+mv "$HOME/Library/LaunchAgents/com.codex-skin-switcher.plist" \
+  "$HOME/Library/LaunchAgents/com.codex-skin-switcher.plist.disabled" 2>/dev/null || true
 mv "$HOME/Library/Application Support/CodexSkinSwitcher/preference.json" \
   "$HOME/Library/Application Support/CodexSkinSwitcher/preference.json.disabled" 2>/dev/null || true
 ```
 
 然后从 Dock 或 Applications 正常打开 Codex。
 
-## 升级自带 watcher 的旧版本
+## Watcher 做了什么
 
-旧版本曾安装 `com.codex-skin-switcher` LaunchAgent。当前版本已经删除这套实现；只需清理一次旧文件：
-
-```bash
-launchctl bootout "gui/$(id -u)/com.codex-skin-switcher" 2>/dev/null || true
-rm -f "$HOME/Library/LaunchAgents/com.codex-skin-switcher.plist"
-rm -f "$HOME/Library/Application Support/CodexSkinSwitcher/runtime/watch.sh"
-rm -f "$HOME/Library/Application Support/CodexSkinSwitcher/recovery.json"
-```
-
-这些命令不会删除主题和 `preference.json`。
-
-## 皮肤已选择，但没有变化
-
-先查看状态。如果 `cdpReady` 为 `false`，说明当前 Codex 没有开启本机调试端口。正常退出 Codex，再执行：
+选择非原生皮肤后，`com.codex-skin-switcher` 等待当前 Codex 正常退出，再执行：
 
 ```bash
-open -na "/Applications/ChatGPT.app" --args \
+open -n "/Applications/ChatGPT.app" --args \
   --remote-debugging-port=9335 \
   --remote-debugging-address=127.0.0.1
 ```
 
-插件不会自动退出、重开、监控或轮询 Codex。使用自定义安装位置时，设置一个 `CODEX_APP_PATH` 即可；不会再扫描其他目录。
+随后它恢复当前主题，并继续等待下一次正常退出。启动或注入失败时，Watcher 会发送一次 macOS 通知、删除自己的 plist 并正常退出。此后从 Dock 正常打开 Codex，不再携带调试参数，也不会循环重试或写 `recovery.json`。选择“原生”同样会卸载它。
+
+## 皮肤已选择，但没有变化
+
+先查看状态。如果 `cdpReady` 为 `false`，说明当前 Codex 没有开启本机调试端口。正常退出一次，Watcher 会带参数重开并恢复主题。它不会强制退出正在使用的 Codex。使用自定义安装位置时，设置一个 `CODEX_APP_PATH` 即可；不会再扫描其他目录。
 
 如果 CDP 已开启但主题仍未变化，常见原因是 MCP 使用旧缓存，或本机同名主题目录保留了旧内容。升级插件后新建一个 Codex 任务；未修改过的 demo 主题可以先改名备份，再让插件重新复制预制版本。
 
 ## 打开皮肤后固定在 10 FPS
 
-历史问题来自旧版本直接运行应用包内可执行文件，而不是背景图或 CSS 性能。当前版本不负责启动 Codex，也没有 watcher。确认已经按上节清理旧 LaunchAgent，并且没有其他脚本直接执行 `Contents/MacOS/ChatGPT`；随后从 Dock 正常启动，或使用上面的单次 `open -na` 命令。
+历史问题来自旧版本直接运行应用包内可执行文件，而不是背景图或 CSS 性能。当前 Watcher 只通过 `/usr/bin/open` 启动，不执行 `Contents/MacOS/ChatGPT`。如果问题重现，先恢复原生并确认没有其他旧脚本直接运行应用包内二进制。
 
 ## 顶部皮肤按钮不能点击
 

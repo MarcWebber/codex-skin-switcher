@@ -13,7 +13,9 @@ const stateRoot = path.join(os.homedir(), "Library", "Application Support", "Cod
 const runtime = path.join(stateRoot, "runtime");
 const themesRoot = path.join(stateRoot, "themes");
 const preferenceFile = path.join(stateRoot, "preference.json");
+const plistFile = path.join(os.homedir(), "Library", "LaunchAgents", "com.codex-skin-switcher.plist");
 const defaultAppPath = "/Applications/ChatGPT.app";
+const watcherLabel = "com.codex-skin-switcher";
 const port = 9335;
 const node = process.execPath;
 const testedCodexVersion = "26.820.60940";
@@ -44,7 +46,7 @@ async function writeJson(file, value) {
 }
 
 async function findCodexApp() {
-  const candidates = [defaultAppPath, process.env.CODEX_APP_PATH].filter(Boolean);
+  const candidates = [process.env.CODEX_APP_PATH, defaultAppPath].filter(Boolean);
   for (const candidate of new Set(candidates)) {
     if (await fs.stat(candidate).catch(() => null)) return candidate;
   }
@@ -54,9 +56,10 @@ async function findCodexApp() {
 async function prepare() {
   await fs.mkdir(runtime, { recursive: true });
   await fs.mkdir(themesRoot, { recursive: true });
-  for (const file of ["skin.mjs", "base.css"]) {
+  for (const file of ["skin.mjs", "watch.sh", "base.css"]) {
     await fs.copyFile(path.join(root, "runtime", file), path.join(runtime, file));
   }
+  await fs.chmod(path.join(runtime, "watch.sh"), 0o755);
   const builtins = path.join(root, "runtime", "themes");
   for (const entry of await fs.readdir(builtins, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
@@ -86,6 +89,36 @@ async function liveSkin(ready) {
   const result = await callRuntime("inspect");
   if (!result.ok) return "native";
   return JSON.parse(result.stdout).id || "native";
+}
+
+function xml(text) {
+  return String(text).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+
+async function enableWatcher(app) {
+  await fs.mkdir(path.dirname(plistFile), { recursive: true });
+  const plist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>Label</key><string>${watcherLabel}</string>
+<key>ProgramArguments</key><array>
+<string>${xml(path.join(runtime, "watch.sh"))}</string>
+<string>${xml(stateRoot)}</string><string>${xml(node)}</string><string>${xml(app)}</string><string>${port}</string><string>${xml(creatorSkillPath)}</string><string>${xml(plistFile)}</string>
+</array>
+<key>RunAtLoad</key><true/>
+<key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+<key>ProcessType</key><string>Background</string>
+</dict></plist>\n`;
+  await fs.writeFile(plistFile, plist);
+  const domain = `gui/${process.getuid()}`;
+  await run("/bin/launchctl", ["bootout", `${domain}/${watcherLabel}`], 5000);
+  const started = await run("/bin/launchctl", ["bootstrap", domain, plistFile], 5000);
+  if (!started.ok) throw new Error(`Watcher 启动失败：${started.error}`);
+}
+
+async function disableWatcher() {
+  await run("/bin/launchctl", ["bootout", `gui/${process.getuid()}/${watcherLabel}`], 5000);
+  await fs.rm(plistFile, { force: true });
 }
 
 async function preference() {
@@ -123,23 +156,27 @@ async function setSkin(preset) {
       const removed = await callRuntime("remove");
       if (!removed.ok) throw new Error(removed.error);
     }
-    return status("已恢复 Codex 原生界面。");
+    await disableWatcher();
+    return status("已恢复 Codex 原生界面，Watcher 已关闭。");
   }
 
   const selected = (await themes()).find((item) => item.id === preset);
   if (!selected) throw new Error(`未知皮肤：${preset}`);
   await writeJson(preferenceFile, { preset });
 
+  const app = await findCodexApp();
+  if (!app) return status(`已保存 ${selected.label}，但未找到 ${defaultAppPath}；如安装在其他位置，请设置 CODEX_APP_PATH。`);
+  await enableWatcher(app);
+
   if (!await cdpReady()) {
-    const app = await findCodexApp();
-    const hint = app
-      ? `请先正常退出 Codex，再执行：open -na "${app}" --args --remote-debugging-port=${port} --remote-debugging-address=127.0.0.1`
-      : `未找到 ${defaultAppPath}；如安装在其他位置，请设置 CODEX_APP_PATH。`;
-    return status(`已保存 ${selected.label}，但当前 Codex 未开启本机调试端口。${hint}`);
+    return status(`已保存 ${selected.label}；正常退出 Codex 后，Watcher 会带本机调试参数重开一次并恢复主题。`);
   }
 
   const applied = await callRuntime("apply", ["--theme", preset, "--creator-skill-path", creatorSkillPath], 12000);
-  if (!applied.ok) throw new Error(`皮肤注入失败：${applied.error}`);
+  if (!applied.ok) {
+    await disableWatcher();
+    throw new Error(`皮肤注入失败，Watcher 已关闭；下次请正常打开 Codex：${applied.error}`);
+  }
   return status(`已切换到 ${selected.label}。`);
 }
 

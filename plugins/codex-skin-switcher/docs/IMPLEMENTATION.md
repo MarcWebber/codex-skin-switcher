@@ -7,14 +7,15 @@ server.mjs
 runtime/
 ├── base.css
 ├── skin.mjs
+├── watch.sh
 └── themes/<id>/{theme.json,extra.css,art.png[,可选子图.png]}
 ```
 
 `server.mjs` 只提供 `get_skin_status` 和 `set_skin`，负责复制运行时、发现主题、保存偏好并调用 `skin.mjs`。`skin.mjs` 通过本机 CDP 连接 Codex 的 `app://-/index.html`，写入一个主题 `<style>`、`data-codex-skin` 和顶部切换器。`base.css` 集中维护当前 Codex 宿主页面的共享映射。
 
-项目没有 LaunchAgent、watcher、自动重启、FPS 侦测、Spotlight 搜索、bundle id 校验或旧版选择器。应用路径只有两项：默认 `/Applications/ChatGPT.app`，以及可选的 `CODEX_APP_PATH`。路径只用于生成启动提示，不用于监控或控制进程。
+项目没有 FPS 侦测、Spotlight 搜索、bundle id 校验或旧版选择器。应用路径只有两项：默认 `/Applications/ChatGPT.app`，以及可选的 `CODEX_APP_PATH`。
 
-Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。插件不接管启动；端口不可用时只保存用户选择并返回一次性启动命令。这样不会引入后台轮询，也不会改变 Codex 的正常进程生命周期。
+Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。选择非原生主题时，`server.mjs` 注册一个最小 LaunchAgent。`watch.sh` 等待用户正常退出 Codex，再通过 `/usr/bin/open` 带上本机 CDP 参数启动，并恢复 `preference.json` 中的主题。它不强制退出进程、不扫描安装位置、不采集性能数据。启动或注入失败时，它发送一次 macOS 通知、删除自己的 plist 并正常退出；后续 Codex 按原生方式启动，不会再次携带 CDP 参数。选择原生主题也会卸载 Watcher。
 
 ## 主题注入
 
@@ -40,8 +41,9 @@ art.png      # 本地背景图
 
 ## 文件职责
 
-- `server.mjs`：MCP、主题发现、偏好与一次性 CDP 调用。
+- `server.mjs`：MCP、主题发现、偏好、Watcher 注册与 CDP 调用。
 - `skin.mjs`：主题校验、CSS 生成、CDP 注入与清理。
+- `watch.sh`：等待下一次正常启动，补充本机 CDP 参数并恢复主题。
 - `base.css`：当前 Codex 版本的按钮、消息、输入区、菜单、终端、文件、Diff 与设置页映射。
 - 主题三个核心文件：用户修改配色、字体、背景和局部风格的集中入口。
 - `skills/skin-creator/SKILL.md`：把提示词和参考图转成主题文件与可选插图。
@@ -50,6 +52,6 @@ art.png      # 本地背景图
 
 ## 校验边界
 
-`skin.mjs validate` 是创建皮肤时的一次性格式检查：读取主题并检查核心文件、必填变量、变量值与 CSS 作用域。它不连接 Codex。项目不包含测试目录、截图工具、FPS 检测或常驻诊断进程。
+`skin.mjs validate` 是创建皮肤时的一次性格式检查：读取主题并检查核心文件、必填变量、变量值与 CSS 作用域。它不连接 Codex。项目不包含测试目录、截图工具、FPS 检测或常驻诊断进程；Watcher 只负责启动与主题恢复。
 
 历史故障和恢复方式见 [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)。

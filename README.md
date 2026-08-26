@@ -35,7 +35,7 @@
 - 通过 `skin-creator` 输入一句提示词，生成背景、配色、字体和主题补充样式。
 - 覆盖任务页、消息框、输入区、菜单、主页按钮、终端、文件与 Diff 查看器、设置页。
 - 默认只读取本地主题文件，不修改 Codex 应用包，也不修改 `~/.codex/config.toml`。
-- 没有常驻 watcher、自动重启、FPS 侦测或安装位置扫描。
+- 一个最小 Watcher 只负责在下一次启动时补上本机 CDP 参数并恢复主题；没有 FPS 侦测或安装位置扫描。
 
 ## 兼容性
 
@@ -46,7 +46,7 @@
 | Codex | `26.820.60940` |
 | Node.js | `22+`，`node` 需要在 Codex 可用的 PATH 中 |
 
-当前实现只维护上表中的 macOS 与 Codex 版本，不包含旧版、Windows 或未来版本的兼容分支。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md) 更新共享宿主映射。
+当前实现只维护上表中的 macOS 与 Codex 版本，不包含旧版、Windows 或未来版本的兼容分支。它仅额外使用一个 macOS LaunchAgent 维持带参数启动。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md) 更新共享宿主映射。
 
 ## 安装
 
@@ -57,15 +57,7 @@ codex plugin add codex-skin-switcher@marcwebber
 
 第一条命令注册这个 Git marketplace，第二条命令安装插件。安装或升级后，新建一个 Codex 任务，让新的 Skill 与 MCP 工具进入当前会话。
 
-MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用位置只检查 `/Applications/ChatGPT.app`；如果你确实安装在别处，可额外设置一个 `CODEX_APP_PATH`。
-
-插件不会接管 Codex 的启动。首次使用或 Codex 重启后，如果状态提示本机调试端口未开启，请先正常退出 Codex，再运行一次：
-
-```bash
-open -na "/Applications/ChatGPT.app" --args \
-  --remote-debugging-port=9335 \
-  --remote-debugging-address=127.0.0.1
-```
+MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用位置只检查 `/Applications/ChatGPT.app`；如果你确实安装在别处，可额外设置一个 `CODEX_APP_PATH`。首次选择皮肤时，如果当前 Codex 没有开启本机调试端口，正常退出一次即可；Watcher 会用 `open` 带上 `9335` 参数重开并恢复主题。
 
 ## 使用示例
 
@@ -146,7 +138,7 @@ home-card-d.png
 恢复 Codex 原生界面
 ```
 
-插件没有 watcher，也不会退出、重开或持续侦测 Codex。完整恢复命令、10 FPS 历史问题、背景不显示、白字白按钮、菜单与子页面失配等处理方式见 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md)。
+Watcher 不会强制退出正在使用的 Codex；它只等待正常退出，并在下一次启动时补上本机 CDP 参数。注入失败后会提示一次、删除自己的 LaunchAgent 并停止；此后从 Dock 正常打开 Codex，不再携带调试参数。完整恢复命令、10 FPS 历史问题、背景不显示、白字白按钮、菜单与子页面失配等处理方式见 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md)。
 
 ## 隐私与安全
 
