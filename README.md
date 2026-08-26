@@ -35,7 +35,7 @@
 - 通过 `skin-creator` 输入一句提示词，生成背景、配色、字体和主题补充样式。
 - 覆盖任务页、消息框、输入区、菜单、主页按钮、终端、文件与 Diff 查看器、设置页。
 - 默认只读取本地主题文件，不修改 Codex 应用包，也不修改 `~/.codex/config.toml`。
-- 启动或注入失败时停止自动重试，保留原生界面，并写入可读的恢复信息。
+- 没有常驻 watcher、自动重启、FPS 侦测或安装位置扫描。
 
 ## 兼容性
 
@@ -46,7 +46,7 @@
 | Codex | `26.820.60940` |
 | Node.js | `22+`，`node` 需要在 Codex 可用的 PATH 中 |
 
-当前实现依赖 macOS LaunchAgent、LaunchServices、Spotlight、`PlistBuddy`、`.app` bundle 与 `~/Library/Application Support`，不是 Windows 通用实现。插件只维护上表中的 Codex 版本，不包含旧版或未来版本的兼容分支。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md) 更新共享宿主映射。
+当前实现只维护上表中的 macOS 与 Codex 版本，不包含旧版、Windows 或未来版本的兼容分支。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md) 更新共享宿主映射。
 
 ## 安装
 
@@ -57,7 +57,15 @@ codex plugin add codex-skin-switcher@marcwebber
 
 第一条命令注册这个 Git marketplace，第二条命令安装插件。安装或升级后，新建一个 Codex 任务，让新的 Skill 与 MCP 工具进入当前会话。
 
-MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。Codex 应用优先读取 `CODEX_APP_PATH`，否则校验 `/Applications/ChatGPT.app` 或 Spotlight 找到的 bundle id `com.openai.codex`。
+MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用位置只检查 `/Applications/ChatGPT.app`；如果你确实安装在别处，可额外设置一个 `CODEX_APP_PATH`。
+
+插件不会接管 Codex 的启动。首次使用或 Codex 重启后，如果状态提示本机调试端口未开启，请先正常退出 Codex，再运行一次：
+
+```bash
+open -na "/Applications/ChatGPT.app" --args \
+  --remote-debugging-port=9335 \
+  --remote-debugging-address=127.0.0.1
+```
 
 ## 使用示例
 
@@ -94,7 +102,7 @@ MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。Codex 
 
 | 主题 | 说明 |
 | --- | --- |
-| 原生 | 移除注入并停用自动换肤 |
+| 原生 | 移除当前界面的主题注入 |
 | 莱依拉星梦 | 月白、雾蓝、星轨背景，带菜单子图和四张不同的主页按钮插图 |
 | 墨璃极光 | 深色玻璃与冷色极光 |
 | 纸灯 | 米白纸张与暖色灯光 |
@@ -138,17 +146,11 @@ home-card-d.png
 恢复 Codex 原生界面
 ```
 
-自动启动失败时，插件不会循环退出或重开 Codex。它会停止 watcher、保留当前界面，并把原因写入：
-
-```text
-~/Library/Application Support/CodexSkinSwitcher/recovery.json
-```
-
-完整恢复命令、10 FPS 历史问题、背景不显示、白字白按钮、菜单与子页面失配等处理方式见 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md)。
+插件没有 watcher，也不会退出、重开或持续侦测 Codex。完整恢复命令、10 FPS 历史问题、背景不显示、白字白按钮、菜单与子页面失配等处理方式见 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md)。
 
 ## 隐私与安全
 
-- 主题、偏好和恢复信息只保存在本机。
+- 主题和偏好只保存在本机。
 - 不上传对话、登录态、项目内容或主题图片。
 - 不包含分析统计与遥测。
 - CDP 只绑定 `127.0.0.1:9335`；不要将它改成局域网或公网地址。

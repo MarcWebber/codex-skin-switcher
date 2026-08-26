@@ -4,7 +4,7 @@ Codex Skin Switcher 是本地 macOS 插件。
 
 ## 本地数据
 
-插件在下面的目录保存主题、当前选择和故障恢复信息：
+插件在下面的目录保存主题、当前选择和运行时副本：
 
 ```text
 ~/Library/Application Support/CodexSkinSwitcher/

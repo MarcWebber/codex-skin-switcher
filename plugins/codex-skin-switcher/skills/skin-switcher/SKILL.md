@@ -13,8 +13,8 @@ This plugin supports macOS and Codex `26.820.60940` only. It does not carry sele
 - Apply a named theme: call `set_skin` with its discovered folder ID.
 - Restore Codex: call `set_skin` with `native`.
 - The floating Skin button inside Codex is the only visual switcher. Its Create skin action inserts the native `codex-skin-switcher:skin-creator` Skill mention followed by an editable `风格：` field in an empty composer; it never sends automatically or overwrites existing input. Its minus control collapses the toolbar to a palette icon; clicking that icon restores it.
-- Report the returned message. When `restartRequired` is true, ask the user to quit and reopen Codex normally. Never restart or kill Codex from the agent turn.
-- When `degraded` is true, report the recovery message and keep the current/native UI. Do not loop or force-relaunch. Troubleshooting lives in `docs/TROUBLESHOOTING.md` under the plugin root.
+- Report the returned message. When `cdpReady` is false, ask the user to quit Codex normally and run the one-shot `open -na ... --remote-debugging-port=9335` command returned by the tool. Never restart, kill, watch, or poll Codex from the agent turn.
+- If applying or removing a theme fails, report the error and keep the current UI. Troubleshooting lives in `docs/TROUBLESHOOTING.md` under the plugin root.
 
 When the user asks to create a new skin from a prompt or reference image, use the sibling `skin-creator` skill.
 
