@@ -1,0 +1,20 @@
+{
+  "name": "marcwebber",
+  "interface": {
+    "displayName": "Marc Webber"
+  },
+  "plugins": [
+    {
+      "name": "codex-skin-switcher",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-skin-switcher"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

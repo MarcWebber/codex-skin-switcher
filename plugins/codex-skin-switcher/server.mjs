@@ -22,6 +22,12 @@ const bundleId = "com.openai.codex";
 const testedCodexVersion = "26.820.60940";
 const creatorSkillPath = path.join(root, "skills", "skin-creator", "SKILL.md");
 
+function assertMacOS() {
+  if (process.platform !== "darwin") {
+    throw new Error("Codex Skin Switcher 当前仅支持 macOS；Windows 版本需要独立的启动器与状态目录实现。");
+  }
+}
+
 async function run(file, args, timeout = 20000) {
   try {
     const result = await execFile(file, args, { timeout, maxBuffer: 4 * 1024 * 1024 });
@@ -248,6 +254,7 @@ async function handle(method, params = {}) {
   if (method === "tools/list") return { tools };
   if (method === "tools/call") {
     try {
+      assertMacOS();
       if (params.name === "get_skin_status") return toolResult(await status());
       if (params.name === "set_skin") return toolResult(await setSkin(String(params.arguments?.preset || "").trim()));
       throw new Error(`未知工具：${params.name}`);
@@ -259,7 +266,7 @@ async function handle(method, params = {}) {
   throw Object.assign(new Error(`未知方法：${method}`), { code: -32601 });
 }
 
-await prepare();
+if (process.platform === "darwin") await prepare();
 const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
 for await (const line of input) {
   if (!line.trim()) continue;

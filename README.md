@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/logo.svg" width="360" alt="Codex Skin Switcher">
+  <img src="./plugins/codex-skin-switcher/assets/logo.svg" width="360" alt="Codex Skin Switcher">
 </p>
 
 <p align="center">
@@ -10,7 +10,7 @@
   <strong>macOS only</strong> · <strong>Local assets</strong> · <strong>Native rollback</strong> · <strong>3-file themes</strong>
 </p>
 
-![莱依拉星梦主题主页](./assets/screenshots/layla-home.png)
+![莱依拉星梦主题主页](./plugins/codex-skin-switcher/assets/screenshots/layla-home.png)
 
 <p align="center">
   莱依拉星梦示例主题：背景、主页建议卡片、侧栏与输入区使用同一套低饱和视觉语言。
@@ -19,11 +19,11 @@
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/skin-menu.png" alt="Codex 顶部皮肤切换菜单">
+      <img src="./plugins/codex-skin-switcher/assets/screenshots/skin-menu.png" alt="Codex 顶部皮肤切换菜单">
       <br><sub>顶部切换菜单：在原生、墨光、纸灯和莱依拉星梦之间切换</sub>
     </td>
     <td width="50%" align="center">
-      <img src="./assets/screenshots/help-menu.png" alt="莱依拉主题下的帮助菜单">
+      <img src="./plugins/codex-skin-switcher/assets/screenshots/help-menu.png" alt="莱依拉主题下的帮助菜单">
       <br><sub>子页面适配：帮助菜单保留原生结构并应用主题插图</sub>
     </td>
   </tr>
@@ -42,28 +42,20 @@
 | 项目 | 支持范围 |
 | --- | --- |
 | 系统 | macOS |
+| Windows | 暂不支持 |
 | Codex | `26.820.60940` |
 | Node.js | `22+`，`node` 需要在 Codex 可用的 PATH 中 |
 
-插件只维护上表中的 Codex 版本，不包含旧版或未来版本的兼容分支。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./docs/TROUBLESHOOTING.md) 更新共享宿主映射。
+当前实现依赖 macOS LaunchAgent、LaunchServices、Spotlight、`PlistBuddy`、`.app` bundle 与 `~/Library/Application Support`，不是 Windows 通用实现。插件只维护上表中的 Codex 版本，不包含旧版或未来版本的兼容分支。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md) 更新共享宿主映射。
 
 ## 安装
 
-### 从源码使用
-
 ```bash
-git clone https://github.com/MarcWebber/codex-skin-switcher.git ~/plugins/codex-skin-switcher
+codex plugin marketplace add MarcWebber/codex-skin-switcher
+codex plugin add codex-skin-switcher@marcwebber
 ```
 
-将仓库注册到本机 personal marketplace 后执行：
-
-```bash
-codex plugin add codex-skin-switcher@personal
-```
-
-安装或升级后，新建一个 Codex 任务，让新的 Skill 与 MCP 工具进入当前会话。
-
-当前仓库首先作为源码与本地插件发布。公开 Git marketplace 安装入口会在仓库加入 marketplace 清单后提供；在此之前，不要把上述 personal marketplace 命令理解为官方插件目录安装。
+第一条命令注册这个 Git marketplace，第二条命令安装插件。安装或升级后，新建一个 Codex 任务，让新的 Skill 与 MCP 工具进入当前会话。
 
 MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。Codex 应用优先读取 `CODEX_APP_PATH`，否则校验 `/Applications/ChatGPT.app` 或 Spotlight 找到的 bundle id `com.openai.codex`。
 
@@ -82,7 +74,7 @@ MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。Codex 
 顶部工具可以折叠为调色板图标；再次点击即可展开。
 “创建皮肤”会在空输入框中插入蓝色的原生 `skin-creator` Skill mention，并留下可编辑的“风格：”；补充完风格后再由你手动发送。
 
-![原生 Skin Creator mention 与参考图](./assets/screenshots/skin-creator.png)
+![原生 Skin Creator mention 与参考图](./plugins/codex-skin-switcher/assets/screenshots/skin-creator.png)
 
 ### 一句话创建皮肤
 
@@ -152,7 +144,7 @@ home-card-d.png
 ~/Library/Application Support/CodexSkinSwitcher/recovery.json
 ```
 
-完整恢复命令、10 FPS 历史问题、背景不显示、白字白按钮、菜单与子页面失配等处理方式见 [Troubleshooting](./docs/TROUBLESHOOTING.md)。
+完整恢复命令、10 FPS 历史问题、背景不显示、白字白按钮、菜单与子页面失配等处理方式见 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md)。
 
 ## 隐私与安全
 
@@ -161,7 +153,7 @@ home-card-d.png
 - 不包含分析统计与遥测。
 - CDP 只绑定 `127.0.0.1:9335`；不要将它改成局域网或公网地址。
 
-详见 [Privacy](./docs/PRIVACY.md)。实现结构和技术边界见 [Implementation](./docs/IMPLEMENTATION.md)。
+详见 [Privacy](./plugins/codex-skin-switcher/docs/PRIVACY.md)。实现结构和技术边界见 [Implementation](./plugins/codex-skin-switcher/docs/IMPLEMENTATION.md)。
 
 ## License
 
