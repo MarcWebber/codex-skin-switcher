@@ -1,0 +1,20 @@
+{
+  "label": "墨光",
+  "description": "墨蓝、青绿与紫色微光工作台",
+  "order": 10,
+  "vars": {
+    "--skin-color-scheme": "dark",
+    "--skin-canvas": "#07101b",
+    "--skin-surface": "rgba(11, 24, 39, .91)",
+    "--skin-sidebar": "#091522",
+    "--skin-control": "rgba(18, 37, 55, .94)",
+    "--skin-text": "#e8f0f1",
+    "--skin-muted": "#9dafb2",
+    "--skin-accent": "#4eaaa4",
+    "--skin-border": "rgba(115, 196, 193, .20)",
+    "--skin-font": "Avenir Next, PingFang SC, SF Pro Text, sans-serif",
+    "--skin-code-font": "SFMono-Regular, Menlo, Monaco, monospace",
+    "--skin-art-position": "74% 50%",
+    "--skin-art-opacity": ".27"
+  }
+}

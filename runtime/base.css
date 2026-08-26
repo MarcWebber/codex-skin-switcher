@@ -1,0 +1,316 @@
+html[data-codex-skin] {
+  color-scheme: var(--skin-color-scheme, light) !important;
+  background: var(--skin-canvas) !important;
+  --skin-ui-font: var(--skin-font);
+  --skin-display-font: var(--skin-ui-font);
+  --codex-base-surface: var(--skin-surface) !important;
+  --color-background-surface-under: var(--skin-canvas) !important;
+  --color-background-surface: var(--skin-surface) !important;
+  --color-background-panel: var(--skin-sidebar) !important;
+  --color-background-control: var(--skin-control) !important;
+  --color-background-control-opaque: var(--skin-control) !important;
+  --color-background-editor-opaque: var(--skin-control) !important;
+  --color-background-elevated-primary: var(--skin-surface) !important;
+  --color-background-elevated-primary-opaque: var(--skin-surface) !important;
+  --color-background-elevated-secondary: var(--skin-control) !important;
+  --color-background-elevated-secondary-opaque: var(--skin-control) !important;
+  --color-background-application-menu: var(--skin-control) !important;
+  --color-background-button-primary: var(--skin-accent) !important;
+  --color-background-button-primary-hover: color-mix(in srgb, var(--skin-accent) 88%, white) !important;
+  --color-background-button-primary-active: color-mix(in srgb, var(--skin-accent) 82%, var(--skin-text)) !important;
+  --color-background-button-primary-inactive: color-mix(in srgb, var(--skin-accent) 52%, transparent) !important;
+  --color-background-button-secondary: var(--skin-control) !important;
+  --color-background-button-secondary-hover: color-mix(in srgb, var(--skin-accent) 10%, var(--skin-control)) !important;
+  --color-background-button-secondary-active: color-mix(in srgb, var(--skin-accent) 15%, var(--skin-control)) !important;
+  --color-background-button-secondary-inactive: color-mix(in srgb, var(--skin-muted) 7%, transparent) !important;
+  --color-background-button-tertiary: transparent !important;
+  --color-background-button-tertiary-hover: color-mix(in srgb, var(--skin-accent) 9%, transparent) !important;
+  --color-background-button-tertiary-active: color-mix(in srgb, var(--skin-accent) 15%, transparent) !important;
+  --color-background-primary-ghost-hover: color-mix(in srgb, var(--skin-accent) 9%, transparent) !important;
+  --color-background-primary-solid: var(--skin-accent) !important;
+  --color-background-primary-soft: var(--skin-control) !important;
+  --color-background-primary-soft-active: var(--skin-control) !important;
+  --color-background-primary-soft-alpha: color-mix(in srgb, var(--skin-accent) 9%, transparent) !important;
+  --color-background-secondary-soft: var(--skin-control) !important;
+  --color-background-secondary-soft-alpha: var(--skin-control) !important;
+  --color-text: var(--skin-text) !important;
+  --color-text-emphasis: var(--skin-text) !important;
+  --color-text-foreground: var(--skin-text) !important;
+  --color-text-secondary: var(--skin-muted) !important;
+  --color-text-tertiary: var(--skin-muted) !important;
+  --color-text-foreground-secondary: var(--skin-muted) !important;
+  --color-text-foreground-tertiary: color-mix(in srgb, var(--skin-muted) 76%, transparent) !important;
+  --color-text-button-primary: var(--skin-on-accent, var(--skin-canvas)) !important;
+  --color-text-button-secondary: var(--skin-text) !important;
+  --color-text-button-tertiary: var(--skin-muted) !important;
+  --color-text-primary-solid: var(--skin-on-accent, var(--skin-canvas)) !important;
+  --color-icon-primary: var(--skin-text) !important;
+  --color-icon-secondary: var(--skin-muted) !important;
+  --color-icon-tertiary: color-mix(in srgb, var(--skin-muted) 72%, transparent) !important;
+  --color-codex-icon: var(--skin-text) !important;
+  --color-codex-icon-active: var(--skin-accent) !important;
+  --color-border: var(--skin-border) !important;
+  --color-border-light: var(--skin-border) !important;
+  --color-border-focus: var(--skin-accent) !important;
+  --color-border-subtle: var(--skin-border) !important;
+  --color-border-primary-outline: var(--skin-border) !important;
+  --color-border-heavy: color-mix(in srgb, var(--skin-text) 20%, transparent) !important;
+  --color-border-strong: color-mix(in srgb, var(--skin-text) 20%, transparent) !important;
+  --color-border-application-menu-separator: var(--skin-border) !important;
+  --color-codex-diff-surface: var(--skin-control) !important;
+  --color-codex-application-menu: var(--skin-control) !important;
+  --color-codex-application-menu-selection: color-mix(in srgb, var(--skin-accent) 12%, var(--skin-control)) !important;
+  --color-surface: var(--skin-surface) !important;
+  --color-surface-elevated: var(--skin-surface) !important;
+  --color-surface-elevated-secondary: var(--skin-control) !important;
+  --color-surface-secondary: var(--skin-sidebar) !important;
+  --color-surface-tertiary: var(--skin-control) !important;
+  --vscode-editor-background: var(--skin-control) !important;
+  --vscode-editor-foreground: var(--skin-text) !important;
+  --vscode-sideBar-background: var(--skin-sidebar) !important;
+  --vscode-panel-background: var(--skin-control) !important;
+  --vscode-input-background: var(--skin-control) !important;
+  --vscode-input-foreground: var(--skin-text) !important;
+  --vscode-input-border: var(--skin-border) !important;
+  --vscode-dropdown-background: var(--skin-control) !important;
+  --vscode-dropdown-foreground: var(--skin-text) !important;
+  --vscode-dropdown-border: var(--skin-border) !important;
+  --vscode-menu-background: var(--skin-control) !important;
+  --vscode-menu-foreground: var(--skin-text) !important;
+  --vscode-menu-border: var(--skin-border) !important;
+  --vscode-menu-selectionBackground: color-mix(in srgb, var(--skin-accent) 14%, var(--skin-control)) !important;
+  --vscode-menu-selectionForeground: var(--skin-text) !important;
+  --vscode-menu-separatorBackground: var(--skin-border) !important;
+  --vscode-menubar-selectionBackground: color-mix(in srgb, var(--skin-accent) 10%, transparent) !important;
+  --vscode-menubar-selectionForeground: var(--skin-text) !important;
+  --vscode-button-background: var(--skin-accent) !important;
+  --vscode-button-foreground: var(--skin-on-accent, #fff) !important;
+  --vscode-button-hoverBackground: color-mix(in srgb, var(--skin-accent) 88%, white) !important;
+  --vscode-button-secondaryBackground: var(--skin-control) !important;
+  --vscode-button-secondaryForeground: var(--skin-text) !important;
+  --vscode-button-secondaryHoverBackground: color-mix(in srgb, var(--skin-accent) 10%, var(--skin-control)) !important;
+  --vscode-checkbox-background: var(--skin-control) !important;
+  --vscode-checkbox-foreground: var(--skin-text) !important;
+  --vscode-checkbox-border: var(--skin-border) !important;
+  --vscode-settings-headerForeground: var(--skin-text) !important;
+  --vscode-settings-modifiedItemIndicator: var(--skin-accent) !important;
+  --vscode-settings-checkboxBackground: var(--skin-control) !important;
+  --vscode-settings-checkboxForeground: var(--skin-text) !important;
+  --vscode-settings-checkboxBorder: var(--skin-border) !important;
+  --vscode-settings-focusedRowBackground: color-mix(in srgb, var(--skin-accent) 10%, var(--skin-control)) !important;
+  --vscode-settings-focusedRowBorder: var(--skin-accent) !important;
+  --vscode-settings-headerBorder: var(--skin-border) !important;
+  --vscode-settings-dropdownBackground: var(--skin-control) !important;
+  --vscode-settings-dropdownForeground: var(--skin-text) !important;
+  --vscode-settings-dropdownBorder: var(--skin-border) !important;
+  --vscode-settings-textInputBackground: var(--skin-control) !important;
+  --vscode-settings-textInputForeground: var(--skin-text) !important;
+  --vscode-settings-textInputBorder: var(--skin-border) !important;
+  --vscode-settings-numberInputBackground: var(--skin-control) !important;
+  --vscode-settings-numberInputForeground: var(--skin-text) !important;
+  --vscode-settings-numberInputBorder: var(--skin-border) !important;
+  --vscode-settings-rowHoverBackground: color-mix(in srgb, var(--skin-accent) 8%, var(--skin-control)) !important;
+  --vscode-editorWidget-background: var(--skin-control) !important;
+  --vscode-editorWidget-foreground: var(--skin-text) !important;
+  --vscode-editorWidget-border: var(--skin-border) !important;
+  --vscode-quickInput-background: var(--skin-control) !important;
+  --vscode-quickInput-foreground: var(--skin-text) !important;
+  --vscode-quickInputList-focusBackground: color-mix(in srgb, var(--skin-accent) 12%, var(--skin-control)) !important;
+  --vscode-quickInputList-focusForeground: var(--skin-text) !important;
+  --vscode-quickInputList-focusIconForeground: var(--skin-accent) !important;
+  --vscode-list-hoverBackground: color-mix(in srgb, var(--skin-accent) 8%, transparent) !important;
+  --vscode-list-activeSelectionBackground: color-mix(in srgb, var(--skin-accent) 16%, var(--skin-control)) !important;
+  --vscode-list-activeSelectionForeground: var(--skin-text) !important;
+  --vscode-list-inactiveSelectionBackground: color-mix(in srgb, var(--skin-accent) 11%, var(--skin-control)) !important;
+  --vscode-tab-activeBackground: var(--skin-control) !important;
+  --vscode-tab-activeForeground: var(--skin-text) !important;
+  --vscode-tab-inactiveBackground: color-mix(in srgb, var(--skin-sidebar) 82%, var(--skin-control)) !important;
+  --vscode-editorGroupHeader-tabsBackground: var(--skin-sidebar) !important;
+  --vscode-textBlockQuote-background: var(--skin-control) !important;
+  --vscode-textBlockQuote-border: var(--skin-border) !important;
+  --vscode-textCodeBlock-background: var(--skin-control) !important;
+  --vscode-textPreformat-background: var(--skin-control) !important;
+  --vscode-textPreformat-foreground: var(--skin-text) !important;
+}
+
+html[data-codex-skin] body {
+  color: var(--skin-text) !important;
+  background: var(--skin-canvas) !important;
+  font-family: var(--skin-ui-font, var(--skin-font)) !important;
+}
+
+html[data-codex-skin] button,
+html[data-codex-skin] input,
+html[data-codex-skin] textarea,
+html[data-codex-skin] select {
+  color: var(--skin-text) !important;
+  font-family: var(--skin-ui-font, var(--skin-font)) !important;
+}
+
+html[data-codex-skin] h1,
+html[data-codex-skin] h2,
+html[data-codex-skin] h3,
+html[data-codex-skin] [data-feature="game-source"] {
+  font-family: var(--skin-display-font, var(--skin-ui-font, var(--skin-font))) !important;
+}
+
+html[data-codex-skin] button[class*="bg-primary-solid"] {
+  color: var(--skin-on-accent, #fff) !important;
+  background: var(--skin-accent) !important;
+  border-color: color-mix(in srgb, var(--skin-accent) 72%, var(--skin-border)) !important;
+}
+
+html[data-codex-skin] button[class*="bg-primary-solid"]:hover {
+  background: color-mix(in srgb, var(--skin-accent) 88%, white) !important;
+}
+
+html[data-codex-skin] button[class*="bg-surface"],
+html[data-codex-skin] button[class*="bg-primary-soft-alpha"] {
+  color: var(--skin-text) !important;
+  background-color: var(--skin-control) !important;
+  border-color: var(--skin-border) !important;
+}
+
+html[data-codex-skin] button[class*="border-transparent"][class*="text-tertiary"]:not([class*="bg-transparent"]),
+html[data-codex-skin] button[class*="border-transparent"][class*="text-default"]:not([class*="bg-transparent"]) {
+  background: color-mix(in srgb, var(--skin-accent) 5%, var(--skin-control)) !important;
+  border-color: color-mix(in srgb, var(--skin-accent) 18%, var(--skin-border)) !important;
+}
+
+html[data-codex-skin] button[class*="border-transparent"]:not([class*="bg-transparent"]):hover,
+html[data-codex-skin] button[class*="border-transparent"]:not([class*="bg-transparent"])[data-state="open"] {
+  background: color-mix(in srgb, var(--skin-accent) 12%, var(--skin-control)) !important;
+  border-color: color-mix(in srgb, var(--skin-accent) 34%, var(--skin-border)) !important;
+}
+
+html[data-codex-skin] button:focus-visible {
+  --tw-ring-color: var(--skin-accent) !important;
+  outline-color: var(--skin-accent) !important;
+}
+
+html[data-codex-skin] aside.app-shell-left-panel {
+  color: var(--skin-text) !important;
+  background: var(--skin-sidebar) !important;
+  border-color: var(--skin-border) !important;
+}
+
+html[data-codex-skin] main[class*="MainContentSurface"] {
+  position: relative !important;
+  isolation: isolate !important;
+  color: var(--skin-text) !important;
+  background: var(--skin-surface) !important;
+}
+
+html[data-codex-skin] main[class*="MainContentSurface"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--skin-art-opacity);
+  background: var(--skin-art) var(--skin-art-position) / cover no-repeat;
+}
+
+html[data-codex-skin] [class*="bg-text/5"] {
+  color: var(--skin-text) !important;
+  background: color-mix(in srgb, var(--skin-accent) 11%, var(--skin-control)) !important;
+  border: 1px solid var(--skin-border) !important;
+}
+
+html[data-codex-skin] [class*="ComposerLayoutRoot"] {
+  color: var(--skin-text) !important;
+  background: var(--skin-control) !important;
+  border-color: var(--skin-border) !important;
+}
+
+html[data-codex-skin] [role="dialog"],
+html[data-codex-skin] [role="menu"],
+html[data-codex-skin] [data-radix-popper-content-wrapper] > * {
+  color: var(--skin-text) !important;
+  background: var(--skin-surface) !important;
+  border-color: var(--skin-border) !important;
+}
+
+html[data-codex-skin] [class*="group/turn-diff"],
+html[data-codex-skin] [class*="group/file-diff"],
+html[data-codex-skin] [data-testid="diff-preview-scroll"],
+html[data-codex-skin] [data-testid="generated-image-preview"],
+html[data-codex-skin] [data-testid="generated-image-gallery"] {
+  color: var(--skin-text) !important;
+  background: var(--skin-control) !important;
+  border: 1px solid var(--skin-border) !important;
+  border-radius: 12px !important;
+}
+
+html[data-codex-skin] [class*="group/turn-diff-file-row"] > button {
+  color: var(--skin-text) !important;
+  background: var(--skin-control) !important;
+  border-top: 1px solid var(--skin-border) !important;
+}
+
+html[data-codex-skin] [data-app-shell-tabs="true"] {
+  color: var(--skin-text) !important;
+  background: var(--skin-surface) !important;
+  border-color: var(--skin-border) !important;
+}
+
+html[data-codex-skin] [data-app-shell-tabs="true"] > [class*="h-toolbar-pane"] {
+  background: linear-gradient(90deg, var(--skin-surface), color-mix(in srgb, var(--skin-accent) 7%, var(--skin-surface))) !important;
+  border-bottom: 1px solid var(--skin-border) !important;
+}
+
+html[data-codex-skin] [data-app-shell-tabs="true"] button[role="tab"] {
+  background: color-mix(in srgb, var(--skin-accent) 8%, var(--skin-control)) !important;
+  border: 1px solid color-mix(in srgb, var(--skin-accent) 22%, var(--skin-border)) !important;
+  border-radius: 9px !important;
+}
+
+html[data-codex-skin] [data-codex-terminal="true"][data-codex-xterm="true"] {
+  --codex-base-accent: var(--skin-accent) !important;
+  --codex-base-ink: var(--skin-text) !important;
+  --codex-base-surface: var(--skin-control) !important;
+  --color-codex-terminal-background: var(--skin-control) !important;
+  --color-codex-terminal-foreground: var(--skin-text) !important;
+  --color-codex-terminal-selection-background: color-mix(in srgb, var(--skin-accent) 24%, transparent) !important;
+  --color-codex-terminal-selection: color-mix(in srgb, var(--skin-accent) 24%, transparent) !important;
+  --color-codex-terminal-selection-inactive: color-mix(in srgb, var(--skin-accent) 14%, transparent) !important;
+  --color-codex-terminal-cursor: var(--skin-accent) !important;
+  --color-codex-terminal-ansi-black: color-mix(in srgb, var(--skin-text) 72%, var(--skin-canvas)) !important;
+  --color-codex-terminal-ansi-bright-black: var(--skin-muted) !important;
+  --color-codex-terminal-ansi-red: #c85b70 !important;
+  --color-codex-terminal-ansi-bright-red: #df7186 !important;
+  --color-codex-terminal-ansi-green: #3f9872 !important;
+  --color-codex-terminal-ansi-bright-green: #55ad87 !important;
+  --color-codex-terminal-ansi-yellow: #b78a3d !important;
+  --color-codex-terminal-ansi-bright-yellow: #cda351 !important;
+  --color-codex-terminal-ansi-blue: var(--skin-accent) !important;
+  --color-codex-terminal-ansi-bright-blue: color-mix(in srgb, var(--skin-accent) 76%, white) !important;
+  --color-codex-terminal-ansi-magenta: color-mix(in srgb, var(--skin-accent) 54%, #c663aa) !important;
+  --color-codex-terminal-ansi-bright-magenta: color-mix(in srgb, var(--skin-accent) 42%, #db78bd) !important;
+  --color-codex-terminal-ansi-cyan: color-mix(in srgb, var(--skin-accent) 50%, #48a9ad) !important;
+  --color-codex-terminal-ansi-bright-cyan: color-mix(in srgb, var(--skin-accent) 42%, #65c1c3) !important;
+  --color-codex-terminal-ansi-white: var(--skin-text) !important;
+  --color-codex-terminal-ansi-bright-white: var(--skin-text) !important;
+  --vscode-terminal-background: var(--skin-control) !important;
+  --vscode-terminal-foreground: var(--skin-text) !important;
+  --vscode-terminal-selectionBackground: color-mix(in srgb, var(--skin-accent) 24%, transparent) !important;
+  --vscode-terminal-inactiveSelectionBackground: color-mix(in srgb, var(--skin-accent) 14%, transparent) !important;
+  --vscode-terminalCursor-foreground: var(--skin-accent) !important;
+  color: var(--skin-text) !important;
+  background: var(--skin-control) !important;
+  border-color: var(--skin-border) !important;
+}
+
+html[data-codex-skin] .xterm,
+html[data-codex-skin] .xterm-viewport {
+  color: var(--skin-text) !important;
+  background-color: var(--skin-control) !important;
+}
+
+html[data-codex-skin] pre,
+html[data-codex-skin] code,
+html[data-codex-skin] kbd,
+html[data-codex-skin] samp,
+html[data-codex-skin] [class*="font-mono"] {
+  font-family: var(--skin-code-font) !important;
+}

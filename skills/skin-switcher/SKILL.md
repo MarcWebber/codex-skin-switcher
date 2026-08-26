@@ -1,0 +1,29 @@
+---
+name: skin-switcher
+description: Open, inspect, switch, restore, or customize local macOS Codex skins.
+---
+
+# Codex Skin Switcher
+
+This plugin supports macOS and Codex `26.820.60940` only. It does not carry selectors for older or future versions, and never edits the Codex application bundle or `~/.codex/config.toml`.
+
+## Actions
+
+- Read status: call `get_skin_status`.
+- Apply a named theme: call `set_skin` with its discovered folder ID.
+- Restore Codex: call `set_skin` with `native`.
+- The floating Skin button inside Codex is the only visual switcher. Its Create skin action inserts the native `codex-skin-switcher:skin-creator` Skill mention followed by an editable `风格：` field in an empty composer; it never sends automatically or overwrites existing input. Its minus control collapses the toolbar to a palette icon; clicking that icon restores it.
+- Report the returned message. When `restartRequired` is true, ask the user to quit and reopen Codex normally. Never restart or kill Codex from the agent turn.
+- When `degraded` is true, report the recovery message and keep the current/native UI. Do not loop or force-relaunch. Troubleshooting lives in `docs/TROUBLESHOOTING.md` under the plugin root.
+
+When the user asks to create a new skin from a prompt or reference image, use the sibling `skin-creator` skill.
+
+## Theme editing
+
+User themes live under `~/Library/Application Support/CodexSkinSwitcher/themes/<id>/`. Copy an existing kebab-case directory and edit these three core files:
+
+1. `theme.json`
+2. `extra.css`
+3. `art.png`
+
+Character themes may optionally add `profile-art.png` and `help-art.png` as visible backgrounds for the two menus, plus `home-card-a.png` through `home-card-d.png` as four unique home-card backgrounds. Missing optional art falls back to `art.png`. Keep avatars native. Character-led home cards should use four different recognizable prop icons, accents, and backgrounds while preserving native actions and text; never repeat an A/B sequence. Choose only installed system fonts through theme variables. Do not add remote CSS, fonts, analytics, arbitrary images, or nested asset folders. Every selector in `extra.css` must begin with `html[data-codex-skin="<id>"]`. The panel discovers new directories automatically.

@@ -1,0 +1,23 @@
+{
+  "label": "莱依拉星梦",
+  "description": "靛蓝、月白与星轨金的静谧夜空工作台",
+  "order": 30,
+  "vars": {
+    "--skin-color-scheme": "light",
+    "--skin-canvas": "#eef1ff",
+    "--skin-surface": "rgba(252, 252, 255, .94)",
+    "--skin-sidebar": "rgba(249, 249, 255, .97)",
+    "--skin-control": "rgba(255, 255, 255, .97)",
+    "--skin-text": "#283052",
+    "--skin-muted": "#6e7596",
+    "--skin-accent": "#789bdc",
+    "--skin-on-accent": "#283052",
+    "--skin-border": "rgba(103, 112, 169, .20)",
+    "--skin-font": "Avenir Next, PingFang SC, SF Pro Text, sans-serif",
+    "--skin-ui-font": "Avenir Next, PingFang SC, SF Pro Text, sans-serif",
+    "--skin-display-font": "Iowan Old Style, Songti SC, STSong, serif",
+    "--skin-code-font": "SFMono-Regular, Menlo, Monaco, monospace",
+    "--skin-art-position": "78% 50%",
+    "--skin-art-opacity": ".22"
+  }
+}

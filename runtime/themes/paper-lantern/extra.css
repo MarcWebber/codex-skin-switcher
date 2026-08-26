@@ -1,0 +1,31 @@
+html[data-codex-skin="paper-lantern"] body {
+  background: radial-gradient(circle at 82% 5%, rgba(195, 133, 55, .16), transparent 28%), var(--skin-canvas) !important;
+}
+
+html[data-codex-skin="paper-lantern"] aside.app-shell-left-panel {
+  border-radius: 0 18px 18px 0 !important;
+  box-shadow: 8px 0 26px rgba(82, 61, 40, .08) !important;
+}
+
+html[data-codex-skin="paper-lantern"] aside.app-shell-left-panel button:hover,
+html[data-codex-skin="paper-lantern"] aside.app-shell-left-panel [aria-current="page"] {
+  background: rgba(102, 123, 89, .13) !important;
+}
+
+html[data-codex-skin="paper-lantern"] main[class*="MainContentSurface"] {
+  border: 1px solid var(--skin-border) !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 18px 0 0 0 !important;
+}
+
+html[data-codex-skin="paper-lantern"] [class*="ComposerLayoutRoot"] {
+  border: 1px solid var(--skin-border) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 12px 28px rgba(83, 58, 33, .10) !important;
+}
+
+html[data-codex-skin="paper-lantern"] [role="dialog"],
+html[data-codex-skin="paper-lantern"] [role="menu"] {
+  box-shadow: 0 16px 38px rgba(72, 51, 31, .16) !important;
+}

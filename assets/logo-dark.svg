@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#69c8bd"/><stop offset=".52" stop-color="#837fe1"/><stop offset="1" stop-color="#e1ae5e"/></linearGradient></defs>
+  <rect width="720" height="200" rx="40" fill="#101722"/>
+  <path d="M100 38 158 71v66l-58 34-58-34-58-34V71Z" fill="#16243a" stroke="url(#g)" stroke-width="10"/>
+  <circle cx="100" cy="104" r="23" fill="url(#g)"/>
+  <text x="194" y="98" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="46" font-weight="700" fill="#edf5f2">Codex Skin</text>
+  <text x="194" y="142" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="27" fill="#9daba8">one-click local switcher</text>
+</svg>
