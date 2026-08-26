@@ -16,18 +16,11 @@
   莱依拉星梦示例主题：背景、主页建议卡片、侧栏与输入区使用同一套低饱和视觉语言。
 </p>
 
-<table>
-  <tr>
-    <td width="50%" align="center">
-      <img src="./plugins/codex-skin-switcher/assets/screenshots/skin-menu.png" alt="Codex 顶部皮肤切换菜单">
-      <br><sub>顶部切换菜单：在原生、墨光、纸灯和莱依拉星梦之间切换</sub>
-    </td>
-    <td width="50%" align="center">
-      <img src="./plugins/codex-skin-switcher/assets/screenshots/help-menu.png" alt="莱依拉主题下的帮助菜单">
-      <br><sub>子页面适配：帮助菜单保留原生结构并应用主题插图</sub>
-    </td>
-  </tr>
-</table>
+![莱依拉主题下的帮助菜单](./assets/screenshots/help-menu.png)
+
+<p align="center">
+  子页面适配：帮助菜单保留原生结构并应用主题插图。
+</p>
 
 ## 能做什么
 
@@ -131,7 +124,6 @@ plugins\codex-skin-switcher\scripts\start-codex-with-skin.cmd
 | --- | --- |
 | 原生 | 移除当前界面的主题注入 |
 | 莱依拉星梦 | 月白、雾蓝、星轨背景，带菜单子图和四张不同的主页按钮插图 |
-| 墨璃极光 | 深色玻璃与冷色极光 |
 | 纸灯 | 米白纸张与暖色灯光 |
 
 莱依拉主题作为功能 demo 随插件提供，用来展示角色背景、菜单子图、主页按钮插图和自定义 SVG 图标能力。代码采用 MIT License；示例角色素材不因此获得 MIT 再授权，详见 [NOTICE](./NOTICE.md)。
