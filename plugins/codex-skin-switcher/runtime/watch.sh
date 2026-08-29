@@ -6,8 +6,9 @@ NODE_BIN="$2"
 APP_BUNDLE="$3"
 APP_EXEC="$APP_BUNDLE/Contents/MacOS/ChatGPT"
 PORT="${4:-9335}"
-CREATOR_SKILL_PATH="${5:-}"
-PLIST_FILE="$6"
+MARKET_PORT="${5:-9336}"
+CREATOR_SKILL_PATH="${6:-}"
+PLIST_FILE="$7"
 ENGINE="$STATE_ROOT/runtime/skin.mjs"
 PREFERENCE="$STATE_ROOT/preference.json"
 
@@ -30,7 +31,7 @@ while :; do
   [ "$THEME" = "native" ] && exit 0
 
   if "$NODE_BIN" "$ENGINE" probe --root "$STATE_ROOT" --port "$PORT" >/dev/null 2>&1; then
-    "$NODE_BIN" "$ENGINE" apply --resume --root "$STATE_ROOT" --port "$PORT" --theme "$THEME" --creator-skill-path "$CREATOR_SKILL_PATH" >/dev/null 2>&1 || disable_after_failure
+    "$NODE_BIN" "$ENGINE" apply --resume --root "$STATE_ROOT" --port "$PORT" --market-port "$MARKET_PORT" --theme "$THEME" --creator-skill-path "$CREATOR_SKILL_PATH" >/dev/null 2>&1 || disable_after_failure
     while "$NODE_BIN" "$ENGINE" probe --root "$STATE_ROOT" --port "$PORT" >/dev/null 2>&1; do sleep 3; done
   elif app_running; then
     sleep 3

@@ -12,10 +12,10 @@ These rules apply to the whole repository.
 ## Architecture
 
 - `.agents/plugins/marketplace.json` exposes the repository plugin to Codex Marketplace.
-- `plugins/codex-skin-switcher/server.mjs` is the small MCP coordinator: theme discovery, preference persistence, local CDP calls, and macOS Watcher registration.
-- `plugins/codex-skin-switcher/runtime/skin.mjs` owns theme validation, CSS assembly, live injection, the in-app switcher, and native cleanup.
+- `plugins/codex-skin-switcher/server.mjs` is the small MCP coordinator: market download, theme discovery, preference persistence, local CDP calls, and macOS Watcher registration.
+- `plugins/codex-skin-switcher/runtime/skin.mjs` owns theme validation, CSS assembly, live injection, the single-panel switcher/market UI, and native cleanup.
 - `plugins/codex-skin-switcher/runtime/base.css` contains shared mappings for the current Codex UI. Do not add old-version selector branches.
-- `plugins/codex-skin-switcher/runtime/themes/<id>/` contains a theme's three core files: `theme.json`, `extra.css`, and `art.png`. Optional menu and home-card art stays beside them.
+- `plugins/codex-skin-switcher/runtime/themes/layla-starlight/` is the only bundled demo. Public themes live in `MarcWebber/codex-skins` and keep the same fixed filenames.
 - `plugins/codex-skin-switcher/runtime/watch.sh` is the minimal macOS recovery launcher. It is not a performance monitor or a general process supervisor.
 - `plugins/codex-skin-switcher/scripts/start-codex-with-skin.ps1` and its `.cmd` wrapper are the Windows-only standalone launcher.
 - `plugins/codex-skin-switcher/skills/` contains the user-facing switcher and creator workflows; `docs/` explains implementation, privacy, and recovery.

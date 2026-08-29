@@ -49,11 +49,10 @@ macOS 插件只维护当前 Codex 页面结构，不包含旧版或未来版本�
 ## 安装
 
 ```bash
-codex plugin marketplace add MarcWebber/codex-skin-switcher
-codex plugin add codex-skin-switcher@marcwebber
+codex plugin marketplace add MarcWebber/codex-skin-switcher && codex plugin add codex-skin-switcher@marcwebber
 ```
 
-第一条命令注册这个 Git marketplace，第二条命令安装插件。安装或升级后，新建一个 Codex 任务，让新的 Skill 与 MCP 工具进入当前会话。
+这一行先注册 Git marketplace，再安装插件。安装或升级后，新建一个 Codex 任务，让新的 Skill 与 MCP 工具进入当前会话。
 
 MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用位置只检查 `/Applications/ChatGPT.app`；如果你确实安装在别处，可额外设置一个 `CODEX_APP_PATH`。首次选择皮肤时，如果当前 Codex 没有开启本机调试端口，正常退出一次即可；Watcher 会用 `open` 带上 `9335` 参数重开并恢复主题。
 
@@ -71,6 +70,8 @@ MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用
 
 顶部工具可以折叠为调色板图标；再次点击即可展开。
 “创建皮肤”会在空输入框中插入蓝色的原生 `skin-creator` Skill mention，并留下可编辑的“风格：”；补充完风格后再由你手动发送。
+
+切换菜单右上角的小店铺图标会在同一个弹层中打开皮肤市场，不叠加第二个窗口。市场打开时读取 [`MarcWebber/codex-skins`](https://github.com/MarcWebber/codex-skins) 的极简 Manifest，并支持本地搜索、滚动浏览、版本显示和一键下载安装。返回箭头会回到原来的纯名称切换列表。
 
 ![原生 Skin Creator mention 与参考图](./plugins/codex-skin-switcher/assets/screenshots/skin-creator.png)
 
@@ -125,16 +126,14 @@ plugins\codex-skin-switcher\scripts\start-codex-with-skin.cmd
 
 `skin-creator` 会生成主题文件，做一次格式检查，然后应用新主题。它不会增加截图脚本、常驻测试进程或 FPS 检测。
 
-## 内置主题
+## 内置 Demo 与皮肤市场
 
 | 主题 | 说明 |
 | --- | --- |
 | 原生 | 移除当前界面的主题注入 |
 | 莱依拉星梦 | 月白、雾蓝、星轨背景，带菜单子图和四张不同的主页按钮插图 |
-| 墨璃极光 | 深色玻璃与冷色极光 |
-| 纸灯 | 米白纸张与暖色灯光 |
 
-莱依拉主题作为功能 demo 随插件提供，用来展示角色背景、菜单子图、主页按钮插图和自定义 SVG 图标能力。代码采用 MIT License；示例角色素材不因此获得 MIT 再授权，详见 [NOTICE](./NOTICE.md)。
+莱依拉主题作为唯一功能 Demo 随插件提供。墨光、纸灯、暖暖·丹青和桑多涅等主题由独立皮肤市场托管，避免把内容持续堆进插件包。代码采用 MIT License；示例角色素材不因此获得 MIT 再授权，详见 [NOTICE](./NOTICE.md)。
 
 ## 修改或新增皮肤
 
@@ -180,6 +179,7 @@ Watcher 不会强制退出正在使用的 Codex；它只等待正常退出，并
 - 主题和偏好只保存在本机。
 - 不上传对话、登录态、项目内容或主题图片。
 - 不包含分析统计与遥测。
+- 只有主动打开皮肤市场时才读取公开的 `MarcWebber/codex-skins`；不会后台检查更新。
 - CDP 只绑定 `127.0.0.1:9335`；不要将它改成局域网或公网地址。
 
 详见 [Privacy](./plugins/codex-skin-switcher/docs/PRIVACY.md)。实现结构和技术边界见 [Implementation](./plugins/codex-skin-switcher/docs/IMPLEMENTATION.md)。
