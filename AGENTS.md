@@ -17,7 +17,6 @@ These rules apply to the whole repository.
 - `plugins/codex-skin-switcher/runtime/base.css` contains shared mappings for the current Codex UI. Do not add old-version selector branches.
 - `plugins/codex-skin-switcher/runtime/themes/layla-starlight/` is the only bundled demo. Public themes live in `MarcWebber/codex-skins` and keep the same fixed filenames.
 - `plugins/codex-skin-switcher/runtime/watch.sh` is the minimal macOS recovery launcher. It is not a performance monitor or a general process supervisor.
-- `plugins/codex-skin-switcher/scripts/start-codex-with-skin.ps1` and its `.cmd` wrapper are the Windows-only standalone launcher.
 - `plugins/codex-skin-switcher/skills/` contains the user-facing switcher and creator workflows; `docs/` explains implementation, privacy, and recovery.
 - Runtime state belongs under `~/Library/Application Support/CodexSkinSwitcher` on macOS. Never modify the Codex application bundle or `~/.codex/config.toml`.
 
@@ -32,9 +31,8 @@ These rules apply to the whole repository.
 ## Platform scope
 
 - A feature implemented and verified only on macOS must be labeled **macOS only** in its user-facing documentation, manifest text, and relevant error or status message.
-- A feature implemented and verified only on Windows must be labeled **Windows only** in the same places.
 - Do not claim cross-platform support until both platforms have been implemented and regression-tested. Other platforms do not need speculative handling.
-- The MCP plugin, Skin Creator, and Watcher are currently **macOS only**. The PowerShell/CMD launcher is currently **Windows only**.
+- The plugin, Skin Creator, market, and Watcher are currently **macOS only**.
 
 ## Tests and regression
 

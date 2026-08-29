@@ -10,9 +10,7 @@ const option = (name, fallback = null) => {
   const index = args.indexOf(name);
   return index < 0 ? fallback : args[index + 1];
 };
-const defaultStateRoot = process.platform === "win32"
-  ? path.join(process.env.LOCALAPPDATA || process.env.USERPROFILE || os.homedir(), "CodexSkinSwitcher")
-  : path.join(process.env.HOME || os.homedir(), "Library", "Application Support", "CodexSkinSwitcher");
+const defaultStateRoot = path.join(os.homedir(), "Library", "Application Support", "CodexSkinSwitcher");
 const stateRoot = path.resolve(option("--root", defaultStateRoot));
 const port = Number(option("--port", 9335));
 const marketPort = Number(option("--market-port", 9336));
