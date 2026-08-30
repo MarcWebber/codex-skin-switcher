@@ -41,7 +41,6 @@
     "logoDark": "./assets/logo-dark.svg",
     "screenshots": [
       "./assets/screenshots/layla-home.png",
-      "./assets/screenshots/skin-menu.png",
       "./assets/screenshots/help-menu.png",
       "./assets/screenshots/skin-creator.png"
     ]

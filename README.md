@@ -16,18 +16,11 @@
   莱依拉星梦示例主题：背景、主页建议卡片、侧栏与输入区使用同一套低饱和视觉语言。
 </p>
 
-<table>
-  <tr>
-    <td width="50%" align="center">
-      <img src="./plugins/codex-skin-switcher/assets/screenshots/skin-menu.png" alt="Codex 顶部皮肤切换菜单">
-      <br><sub>顶部切换菜单：在原生与已安装主题之间切换</sub>
-    </td>
-    <td width="50%" align="center">
-      <img src="./plugins/codex-skin-switcher/assets/screenshots/help-menu.png" alt="莱依拉主题下的帮助菜单">
-      <br><sub>子页面适配：帮助菜单保留原生结构并应用主题插图</sub>
-    </td>
-  </tr>
-</table>
+![莱依拉主题下的帮助菜单](./plugins/codex-skin-switcher/assets/screenshots/help-menu.png)
+
+<p align="center">
+  子页面适配：帮助菜单保留原生结构并应用主题插图。
+</p>
 
 ## 能做什么
 
