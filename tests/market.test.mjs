@@ -48,7 +48,7 @@ test("market API expands the minimal manifest with theme metadata", async () => 
         preview: "https://market.test/skins/remote-skin/preview.png",
         installed: false,
     }]);
-    assert.deepEqual(await installMarketSkin("remote-skin", false), { id: "remote-skin", installed: true });
+    assert.deepEqual(await installMarketSkin("remote-skin"), { id: "remote-skin", installed: true });
     assert.equal(await fs.readFile(path.join(state, "themes", "remote-skin", "meta.json"), "utf8"), JSON.stringify(files["/skins/remote-skin/meta.json"]));
   } finally {
     globalThis.fetch = originalFetch;

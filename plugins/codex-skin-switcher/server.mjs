@@ -48,8 +48,8 @@ async function writeJson(file, value) {
 }
 
 async function findCodexApp() {
-  const candidates = [process.env.CODEX_APP_PATH, defaultAppPath].filter(Boolean);
-  for (const candidate of new Set(candidates)) {
+  for (const candidate of [process.env.CODEX_APP_PATH, defaultAppPath]) {
+    if (!candidate) continue;
     if (await fs.stat(candidate).catch(() => null)) return candidate;
   }
   return null;
@@ -127,24 +127,26 @@ async function marketSkins() {
   }));
 }
 
-async function installMarketSkin(id, activate = true) {
+async function installMarketSkin(id) {
   if (!themePattern.test(id)) throw new Error("非法皮肤 ID");
   const destination = path.join(themesRoot, id);
-  if (await fs.stat(destination).catch(() => null)) return activate ? setSkin(id) : { id, installed: true };
+  if (await fs.stat(destination).catch(() => null)) return { id, installed: true };
   const staging = path.join(themesRoot, `.market-${id}-${process.pid}`);
   await fs.rm(staging, { recursive: true, force: true });
   await fs.mkdir(staging, { recursive: true });
   try {
     const base = `${marketRoot}/skins/${id}`;
-    for (const file of marketRequired) await fs.writeFile(path.join(staging, file), await download(`${base}/${file}`));
-    for (const file of marketOptional) {
+    await Promise.all(marketRequired.map(async (file) => {
+      await fs.writeFile(path.join(staging, file), await download(`${base}/${file}`));
+    }));
+    await Promise.all(marketOptional.map(async (file) => {
       const data = await download(`${base}/${file}`, true);
       if (data) await fs.writeFile(path.join(staging, file), data);
-    }
+    }));
     const checked = await callRuntime("validate", ["--theme", id, "--folder", staging], 12000);
     if (!checked.ok) throw new Error(checked.error);
     await fs.rename(staging, destination);
-    return activate ? setSkin(id) : { id, installed: true };
+    return { id, installed: true };
   } catch (error) {
     await fs.rm(staging, { recursive: true, force: true });
     throw error;
@@ -161,7 +163,7 @@ function sendJson(response, status, value) {
   response.end(JSON.stringify(value));
 }
 
-function startMarketApi() {
+function startUiApi() {
   const server = http.createServer(async (request, response) => {
     if (request.method === "OPTIONS") return sendJson(response, 204, {});
     try {
@@ -169,8 +171,13 @@ function startMarketApi() {
       if (request.method === "GET" && url.pathname === "/market") {
         return sendJson(response, 200, { skins: await marketSkins() });
       }
-      const match = request.method === "POST" && url.pathname.match(/^\/install\/([a-z0-9-]+)$/);
-      if (match) return sendJson(response, 200, await installMarketSkin(match[1]));
+      const selectMatch = request.method === "POST" && url.pathname.match(/^\/select\/([a-z0-9-]+)$/);
+      if (selectMatch) return sendJson(response, 200, await setSkin(selectMatch[1]));
+      const installMatch = request.method === "POST" && url.pathname.match(/^\/install\/([a-z0-9-]+)$/);
+      if (installMatch) {
+        await installMarketSkin(installMatch[1]);
+        return sendJson(response, 200, await setSkin(installMatch[1]));
+      }
       return sendJson(response, 404, { error: "Not found" });
     } catch (error) {
       return sendJson(response, 500, { error: error.message });
@@ -186,7 +193,7 @@ function xml(text) {
   return String(text).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
-async function enableWatcher(app) {
+async function ensureWatcher(app) {
   await fs.mkdir(path.dirname(plistFile), { recursive: true });
   const plist = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -200,6 +207,7 @@ async function enableWatcher(app) {
 <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
 <key>ProcessType</key><string>Background</string>
 </dict></plist>\n`;
+  if (await fs.readFile(plistFile, "utf8").catch(() => null) === plist) return;
   await fs.writeFile(plistFile, plist);
   const domain = `gui/${process.getuid()}`;
   await run("/bin/launchctl", ["bootout", `${domain}/${watcherLabel}`], 5000);
@@ -235,8 +243,8 @@ async function setSkin(preset) {
   if (preset === "native") {
     await writeJson(preferenceFile, { preset });
     if (await cdpReady()) {
-      const removed = await callRuntime("remove");
-      if (!removed.ok) throw new Error(removed.error);
+      const applied = await callRuntime("apply", ["--theme", preset, "--creator-skill-path", creatorSkillPath], 12000);
+      if (!applied.ok) throw new Error(applied.error);
     }
     await disableWatcher();
     return status("已恢复 Codex 原生界面，Watcher 已关闭。");
@@ -248,7 +256,7 @@ async function setSkin(preset) {
 
   const app = await findCodexApp();
   if (!app) return status(`已保存 ${selected.label}，但未找到 ${defaultAppPath}；如安装在其他位置，请设置 CODEX_APP_PATH。`);
-  await enableWatcher(app);
+  await ensureWatcher(app);
 
   if (!await cdpReady()) {
     return status(`已保存 ${selected.label}；正常退出 Codex 后，Watcher 会带本机调试参数重开一次并恢复主题。`);
@@ -316,7 +324,7 @@ async function handle(method, params = {}) {
 if (process.argv[1] && path.resolve(process.argv[1]) === sourceFile) {
   if (process.platform === "darwin") {
     await prepare();
-    startMarketApi();
+    startUiApi();
   }
   const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
   for await (const line of input) {

@@ -11,7 +11,7 @@ runtime/
 └── themes/<id>/{theme.json,extra.css,art.png[,可选子图.png]}
 ```
 
-`server.mjs` 提供 `get_skin_status`、`set_skin` 和仅绑定 `127.0.0.1:9336` 的皮肤市场接口，负责复制运行时、发现主题、保存偏好、下载主题并调用 `skin.mjs`。`skin.mjs` 通过本机 CDP 连接 Codex 的 `app://-/index.html`，写入一个主题 `<style>`、`data-codex-skin` 和顶部切换器。`base.css` 集中维护当前 Codex 宿主页面的共享映射。
+`server.mjs` 提供 `get_skin_status`、`set_skin` 和仅绑定 `127.0.0.1:9336` 的界面接口，负责复制运行时、发现主题、保存偏好、下载主题并调用 `skin.mjs`。顶部菜单、Skill 与市场安装都通过 `setSkin` 进入同一条切换链路。`skin.mjs` 通过本机 CDP 连接 Codex 的 `app://-/index.html`，写入一个主题 `<style>`、`data-codex-skin` 和顶部切换器。`base.css` 集中维护当前 Codex 宿主页面的共享映射。
 
 项目没有 FPS 侦测、Spotlight 搜索、bundle id 校验或旧版选择器。应用路径只有两项：默认 `/Applications/ChatGPT.app`，以及可选的 `CODEX_APP_PATH`。
 
@@ -21,7 +21,7 @@ Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。选择非原生主题时，`
 
 首次应用时，运行时创建一个 `<style>` 和一个 Shadow DOM 顶部工具。顶部工具显式使用 `no-drag` 点击区，避免 macOS 标题栏截获鼠标。它不使用 MutationObserver、ResizeObserver 或页面轮询。
 
-主题 CSS 预先放进切换菜单；点击主题只替换 `<style>` 内容和根属性。重复应用同一主题时比较 CSS 指纹，相同内容直接返回。菜单里的“原生”清空主题样式但保留切换入口；调用 `set_skin("native")` 才会删除样式、顶部工具和根属性。
+主题 CSS 预先放进切换菜单。点击本地主题、市场安装和调用 `set_skin` 都先更新 `preference.json`，再由同一个 `apply` 入口替换 `<style>` 内容和根属性；不再使用 `localStorage` 保存第二份主题选择。重复应用时比较 CSS 指纹并复用当前顶部工具。选择“原生”会清空主题样式、保留切换入口并卸载 Watcher。
 
 “创建皮肤”只在空输入框中插入 Codex 原生的 `codex-skin-switcher:skin-creator` Skill mention 和可编辑的“风格：”，不会覆盖已有输入，也不会自动发送。
 

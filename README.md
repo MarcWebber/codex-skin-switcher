@@ -20,7 +20,7 @@
   <tr>
     <td width="50%" align="center">
       <img src="./plugins/codex-skin-switcher/assets/screenshots/skin-menu.png" alt="Codex 顶部皮肤切换菜单">
-      <br><sub>顶部切换菜单：在原生、墨光、纸灯和莱依拉星梦之间切换</sub>
+      <br><sub>顶部切换菜单：在原生与已安装主题之间切换</sub>
     </td>
     <td width="50%" align="center">
       <img src="./plugins/codex-skin-switcher/assets/screenshots/help-menu.png" alt="莱依拉主题下的帮助菜单">
@@ -96,7 +96,7 @@ MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用
 | 原生 | 移除当前界面的主题注入 |
 | 莱依拉星梦 | 月白、雾蓝、星轨背景，带菜单子图和四张不同的主页按钮插图 |
 
-莱依拉主题作为唯一功能 Demo 随插件提供。墨光、纸灯、暖暖·丹青和桑多涅等主题由独立皮肤市场托管，避免把内容持续堆进插件包。代码采用 MIT License；示例角色素材不因此获得 MIT 再授权，详见 [NOTICE](./NOTICE.md)。
+莱依拉主题作为唯一功能 Demo 随插件提供。纸灯、暖暖·丹青和桑多涅等主题由独立皮肤市场托管，避免把内容持续堆进插件包。代码采用 MIT License；示例角色素材不因此获得 MIT 再授权，详见 [NOTICE](./NOTICE.md)。
 
 ## 修改或新增皮肤
 

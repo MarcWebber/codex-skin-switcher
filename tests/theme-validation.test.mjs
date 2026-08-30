@@ -60,20 +60,22 @@ test("validator accepts a staged folder before installation", async () => {
   }
 });
 
-test("injected switcher and market script parses", async () => {
+test("native and themed selections share the injected switcher path", async () => {
   const state = await mkdtemp(path.join(os.tmpdir(), "codex-skin-ui-test-"));
   try {
     await mkdir(path.join(state, "runtime"));
     await cp(path.join(plugin, "runtime", "base.css"), path.join(state, "runtime", "base.css"));
     await cp(path.join(plugin, "runtime", "themes"), path.join(state, "themes"), { recursive: true });
-    const { stdout } = await exec(process.execPath, [
-      path.join(plugin, "runtime", "skin.mjs"),
-      "apply",
-      "--dry-run",
-      "--root", state,
-      "--theme", "layla-starlight",
-    ]);
-    assert.deepEqual(JSON.parse(stdout), { ok: true, dryRun: true });
+    for (const theme of ["layla-starlight", "native"]) {
+      const { stdout } = await exec(process.execPath, [
+        path.join(plugin, "runtime", "skin.mjs"),
+        "apply",
+        "--dry-run",
+        "--root", state,
+        "--theme", theme,
+      ]);
+      assert.deepEqual(JSON.parse(stdout), { ok: true, dryRun: true });
+    }
   } finally {
     await rm(state, { recursive: true, force: true });
   }

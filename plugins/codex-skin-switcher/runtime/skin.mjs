@@ -21,14 +21,17 @@ const requiredVars = [
   "--skin-text", "--skin-muted", "--skin-accent", "--skin-border",
   "--skin-font", "--skin-code-font", "--skin-art-position", "--skin-art-opacity",
 ];
+const optionalArtFiles = [
+  "profile-art.png", "help-art.png",
+  "home-card-a.png", "home-card-b.png", "home-card-c.png", "home-card-d.png",
+];
 
 async function readJson(file) {
   return JSON.parse(await fs.readFile(file, "utf8"));
 }
 
 function assetUrl(file) {
-  const normalized = file.split(path.sep).join("/");
-  return `app://fs/@fs${encodeURI(normalized.startsWith("/") ? normalized : `/${normalized}`)}`;
+  return `app://fs/@fs${encodeURI(file)}`;
 }
 
 async function listThemes() {
@@ -71,35 +74,23 @@ async function loadTheme(id, customFolder = null) {
   validateExtraCss(extra, id);
   const artFile = path.join(folder, "art.png");
   const art = await fs.readFile(artFile);
-  const profileArtFile = path.join(folder, "profile-art.png");
-  const helpArtFile = path.join(folder, "help-art.png");
-  const homeCardAFile = path.join(folder, "home-card-a.png");
-  const homeCardBFile = path.join(folder, "home-card-b.png");
-  const homeCardCFile = path.join(folder, "home-card-c.png");
-  const homeCardDFile = path.join(folder, "home-card-d.png");
-  const profileArt = await fs.readFile(profileArtFile).catch(() => null);
-  const helpArt = await fs.readFile(helpArtFile).catch(() => null);
-  const homeCardA = await fs.readFile(homeCardAFile).catch(() => null);
-  const homeCardB = await fs.readFile(homeCardBFile).catch(() => null);
-  const homeCardC = await fs.readFile(homeCardCFile).catch(() => null);
-  const homeCardD = await fs.readFile(homeCardDFile).catch(() => null);
+  const optionalArt = new Map(await Promise.all(optionalArtFiles.map(async (file) => [
+    file,
+    await fs.readFile(path.join(folder, file)).catch(() => null),
+  ])));
   const base = await fs.readFile(path.join(stateRoot, "runtime", "base.css"), "utf8");
   const vars = Object.entries(data.vars).map(([key, value]) => `${key}:${value}`).join(";");
   const artUrl = assetUrl(artFile);
-  const profileArtUrl = profileArt ? assetUrl(profileArtFile) : artUrl;
-  const helpArtUrl = helpArt ? assetUrl(helpArtFile) : artUrl;
-  const homeCardAUrl = homeCardA ? assetUrl(homeCardAFile) : artUrl;
-  const homeCardBUrl = homeCardB ? assetUrl(homeCardBFile) : homeCardAUrl;
-  const homeCardCUrl = homeCardC ? assetUrl(homeCardCFile) : homeCardBUrl;
-  const homeCardDUrl = homeCardD ? assetUrl(homeCardDFile) : homeCardCUrl;
+  const optionalUrl = (file, fallback) => optionalArt.get(file) ? assetUrl(path.join(folder, file)) : fallback;
+  const profileArtUrl = optionalUrl("profile-art.png", artUrl);
+  const helpArtUrl = optionalUrl("help-art.png", artUrl);
+  const homeCardAUrl = optionalUrl("home-card-a.png", artUrl);
+  const homeCardBUrl = optionalUrl("home-card-b.png", homeCardAUrl);
+  const homeCardCUrl = optionalUrl("home-card-c.png", homeCardBUrl);
+  const homeCardDUrl = optionalUrl("home-card-d.png", homeCardCUrl);
   const css = `${base}\nhtml[data-codex-skin="${id}"]{${vars};--skin-art:url("${artUrl}");--skin-profile-art:url("${profileArtUrl}");--skin-help-art:url("${helpArtUrl}");--skin-home-card-art-a:url("${homeCardAUrl}");--skin-home-card-art-b:url("${homeCardBUrl}");--skin-home-card-art-c:url("${homeCardCUrl}");--skin-home-card-art-d:url("${homeCardDUrl}")}\n${extra}`;
   const hash = crypto.createHash("sha256").update(css).update(art);
-  if (profileArt) hash.update(profileArt);
-  if (helpArt) hash.update(helpArt);
-  if (homeCardA) hash.update(homeCardA);
-  if (homeCardB) hash.update(homeCardB);
-  if (homeCardC) hash.update(homeCardC);
-  if (homeCardD) hash.update(homeCardD);
+  for (const data of optionalArt.values()) if (data) hash.update(data);
   const fingerprint = hash.digest("hex");
   return { id, label: data.label || id, css, fingerprint };
 }
@@ -149,8 +140,8 @@ async function evaluate(expression) {
 }
 
 async function apply(id) {
-  const requested = await loadTheme(id);
   const bundled = await Promise.all((await listThemes()).map((theme) => loadTheme(theme.id)));
+  if (id !== "native" && !bundled.some((theme) => theme.id === id)) throw new Error(`未知皮肤：${id}`);
   const creatorSkill = {
     name: "codex-skin-switcher:skin-creator",
     displayName: "skin-creator",
@@ -159,23 +150,25 @@ async function apply(id) {
     iconSmall: "",
   };
   const runtimeFingerprint = crypto.createHash("sha256").update(await fs.readFile(new URL(import.meta.url))).digest("hex");
-  const bundleFingerprint = crypto.createHash("sha256").update(bundled.map((theme) => theme.fingerprint).join(":") + runtimeFingerprint).digest("hex");
-  const resume = args.includes("--resume");
+  const bundleFingerprint = crypto.createHash("sha256").update(JSON.stringify({
+    themes: bundled.map((theme) => theme.fingerprint),
+    runtimeFingerprint,
+    creatorSkillPath,
+    marketPort,
+  })).digest("hex");
   return evaluate(`(() => {
-    const requested = ${JSON.stringify(requested.id)};
+    const requested = ${JSON.stringify(id)};
     const themes = ${JSON.stringify(bundled)};
     const creatorSkill = ${JSON.stringify(creatorSkill)};
     const marketUrl = ${JSON.stringify(`http://127.0.0.1:${marketPort}`)};
     const bundleFingerprint = ${JSON.stringify(bundleFingerprint)};
-    const resume = ${JSON.stringify(resume)};
     const key = "__CODEX_SKIN__";
     const styleId = "codex-skin-style";
     const toolbarId = "codex-skin-toolbar";
-    const storageKey = "codex-skin-quick-preset";
     const collapsedKey = "codex-skin-toolbar-collapsed";
     const current = window[key];
     if (current?.bundleFingerprint === bundleFingerprint && document.getElementById(toolbarId)) {
-      if (!resume && current.id !== requested) current.select(requested);
+      current.activate(requested);
       return { ok: true, id: current.id, unchanged: true };
     }
     current?.cleanup?.();
@@ -236,6 +229,7 @@ async function apply(id) {
     shadow.addEventListener("pointerdown", (event) => event.stopPropagation());
     const toggle = shadow.getElementById("toggle");
     const panel = shadow.getElementById("panel");
+    const title = shadow.getElementById("title");
     const label = shadow.getElementById("label");
     const list = shadow.getElementById("themes");
     const collapse = shadow.getElementById("collapse");
@@ -246,7 +240,7 @@ async function apply(id) {
     const query = shadow.getElementById("query");
     const options = [{ id: "native", label: "原生" }, ...themes];
     let marketItems = [];
-    const select = (nextId) => {
+    const activate = (nextId) => {
       const next = themes.find((theme) => theme.id === nextId);
       if (next) {
         style.textContent = next.css;
@@ -257,10 +251,14 @@ async function apply(id) {
       }
       window[key].id = next?.id || "native";
       window[key].fingerprint = next?.fingerprint || "toolbar-native";
-      localStorage.setItem(storageKey, next?.id || "native");
       label.textContent = next?.label || "原生";
       for (const button of list.querySelectorAll("button")) button.setAttribute("aria-pressed", String(button.dataset.id === (next?.id || "native")));
       panel.hidden = true;
+    };
+    const select = async (nextId) => {
+      const response = await fetch(marketUrl + "/select/" + encodeURIComponent(nextId), { method: "POST" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "切换失败");
     };
     for (const option of options) {
       const button = document.createElement("button");
@@ -269,7 +267,15 @@ async function apply(id) {
       button.dataset.id = option.id;
       button.innerHTML = "<span></span><span class=mark>✓</span>";
       button.firstElementChild.textContent = option.label;
-      button.onclick = () => select(option.id);
+      button.onclick = async () => {
+        title.textContent = "切换中…";
+        try {
+          await select(option.id);
+          title.textContent = "切换皮肤";
+        } catch (error) {
+          title.textContent = error.message;
+        }
+      };
       list.appendChild(button);
     }
     const setCollapsed = (collapsed) => {
@@ -395,23 +401,11 @@ async function apply(id) {
       delete window[key];
       return true;
     };
-    window[key] = { id: requested, fingerprint: null, bundleFingerprint, select, cleanup };
-    const stored = localStorage.getItem(storageKey);
-    const initial = resume && options.some((option) => option.id === stored) ? stored : requested;
-    select(initial);
+    window[key] = { id: requested, fingerprint: null, bundleFingerprint, activate, cleanup };
+    const initial = requested;
+    activate(initial);
     setCollapsed(localStorage.getItem(collapsedKey) === "1");
     return { ok: true, id: initial, unchanged: false };
-  })()`);
-}
-
-async function remove() {
-  return evaluate(`(() => {
-    window.__CODEX_SKIN__?.cleanup?.();
-    document.getElementById("codex-skin-style")?.remove();
-    document.getElementById("codex-skin-toolbar")?.remove();
-    delete document.documentElement.dataset.codexSkin;
-    delete window.__CODEX_SKIN__;
-    return { ok: true };
   })()`);
 }
 
@@ -419,19 +413,9 @@ async function inspect() {
   return evaluate(`({ id: window.__CODEX_SKIN__?.id || "native", fingerprint: window.__CODEX_SKIN__?.fingerprint || null })`);
 }
 
-async function ready() {
-  try {
-    return Boolean(await evaluate("Boolean(document.body)"));
-  } catch {
-    return false;
-  }
-}
-
 if (command === "themes") console.log(JSON.stringify(await listThemes(), null, 2));
 else if (command === "validate") console.log(JSON.stringify(await validate(option("--theme"))));
 else if (command === "probe") process.exit((await targets()).some(isMain) ? 0 : 1);
-else if (command === "ready") process.exit(await ready() ? 0 : 1);
 else if (command === "inspect") console.log(JSON.stringify(await inspect()));
 else if (command === "apply") console.log(JSON.stringify(await apply(option("--theme"))));
-else if (command === "remove") console.log(JSON.stringify(await remove()));
-else throw new Error("用法：skin.mjs themes|validate|probe|ready|inspect|apply|remove");
+else throw new Error("用法：skin.mjs themes|validate|probe|inspect|apply");

@@ -31,7 +31,7 @@ while :; do
   [ "$THEME" = "native" ] && exit 0
 
   if "$NODE_BIN" "$ENGINE" probe --root "$STATE_ROOT" --port "$PORT" >/dev/null 2>&1; then
-    "$NODE_BIN" "$ENGINE" apply --resume --root "$STATE_ROOT" --port "$PORT" --market-port "$MARKET_PORT" --theme "$THEME" --creator-skill-path "$CREATOR_SKILL_PATH" >/dev/null 2>&1 || disable_after_failure
+    "$NODE_BIN" "$ENGINE" apply --root "$STATE_ROOT" --port "$PORT" --market-port "$MARKET_PORT" --theme "$THEME" --creator-skill-path "$CREATOR_SKILL_PATH" >/dev/null 2>&1 || disable_after_failure
     while "$NODE_BIN" "$ENGINE" probe --root "$STATE_ROOT" --port "$PORT" >/dev/null 2>&1; do sleep 3; done
   elif app_running; then
     sleep 3
