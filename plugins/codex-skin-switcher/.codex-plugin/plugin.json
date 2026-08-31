@@ -1,7 +1,7 @@
 {
   "name": "codex-skin-switcher",
-  "version": "0.1.1+codex.20260831170025",
-  "description": "Minimal macOS Codex skin switching, one-click skin market, prompt-based creation, and native rollback.",
+  "version": "0.1.1+codex.20260831183105",
+  "description": "Minimal macOS Codex skin switching, prompt-based creation, one-click market submission, and native rollback.",
   "author": {
     "name": "Marc Webber"
   },
@@ -11,6 +11,7 @@
     "skin",
     "theme",
     "appearance",
+    "marketplace",
     "local"
   ],
   "skills": "./skills/",
@@ -18,13 +19,14 @@
   "interface": {
     "displayName": "Codex Skin Switcher",
     "shortDescription": "Switch Codex skins or return to Native in one click.",
-    "longDescription": "A macOS-only Codex skin switcher with a compact local list, an on-demand skin market, prompt-created three-file themes, native rollback, and a minimal launch watcher.",
+    "longDescription": "A macOS-only Codex skin switcher with a compact local list, an on-demand skin market, prompt-created three-file themes, one-click market Pull Requests, native rollback, and a minimal launch watcher.",
     "developerName": "Marc Webber",
     "category": "Developer Tools",
     "capabilities": [
       "Interactive",
       "Three-file core themes",
       "Prompt-created themes",
+      "One-click market Pull Requests",
       "Collapsible in-app skin menu",
       "On-demand skin market",
       "Removable downloaded skins",
@@ -34,7 +36,8 @@
     "defaultPrompt": [
       "\u67e5\u770b\u5f53\u524d\u76ae\u80a4\u5e76\u5207\u6362\u5230\u53e6\u4e00\u5957\u4e3b\u9898\u3002",
       "\u5207\u6362\u5230\u83b1\u4f9d\u62c9\u661f\u68a6\u3002",
-      "\u521b\u5efa\u4e00\u4e2a\u6708\u5149\u4e0e\u661f\u8f68\u98ce\u683c\u7684 Codex \u76ae\u80a4\u3002"
+      "\u521b\u5efa\u4e00\u4e2a\u6708\u5149\u4e0e\u661f\u8f68\u98ce\u683c\u7684 Codex \u76ae\u80a4\u3002",
+      "\u628a\u5f53\u524d\u76ae\u80a4\u6295\u7a3f\u5230\u76ae\u80a4\u5e02\u573a\u5e76\u53d1\u8d77 Pull Request\u3002"
     ],
     "brandColor": "#667B59",
     "composerIcon": "./assets/icon.svg",

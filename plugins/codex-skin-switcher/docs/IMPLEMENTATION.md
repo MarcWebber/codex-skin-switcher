@@ -9,6 +9,9 @@ runtime/
 ├── skin.mjs
 ├── watch.sh
 └── themes/<id>/{theme.json,extra.css,art.png[,可选子图.png]}
+skills/skin-creator/
+├── SKILL.md
+└── scripts/publish.mjs
 ```
 
 `server.mjs` 提供 `get_skin_status`、`set_skin` 和仅绑定 `127.0.0.1:9336` 的界面接口，负责复制运行时、发现主题、保存偏好、下载主题并调用 `skin.mjs`。顶部菜单、Skill 与市场安装都通过 `setSkin` 进入同一条切换链路。`skin.mjs` 通过本机 CDP 连接 Codex 的 `app://-/index.html`，写入一个主题 `<style>`、`data-codex-skin` 和顶部切换器。`base.css` 集中维护当前 Codex 宿主页面的共享映射。
@@ -53,11 +56,14 @@ art.png      # 本地背景图
 - `base.css`：当前 Codex 版本的按钮、消息、输入区、菜单、终端、文件、Diff 与设置页映射。
 - 主题三个核心文件：用户修改配色、字体、背景和局部风格的集中入口。
 - `skills/skin-creator/SKILL.md`：把提示词和参考图转成主题文件与可选插图。
+- `skills/skin-creator/scripts/publish.mjs`：在用户明确投稿后校验主题、准备固定市场文件、运行市场回归并通过 `gh` 创建功能分支与 Pull Request；不直接写入或合并 `main`。
 
 宿主选择器只对应当前 Codex 页面结构。升级 Codex 后如果 DOM 变化，应直接更新 `base.css` 的当前映射，不新增旧版兼容分支。
 
 ## 校验边界
 
 `skin.mjs validate` 是创建或下载皮肤时的一次性格式检查：读取主题并检查核心文件、必填变量、变量值与 CSS 作用域。它不连接 Codex。项目不包含截图工具、FPS 检测或常驻诊断进程；Watcher 只负责启动与主题恢复。
+
+投稿脚本复用同一个主题校验，并在临时克隆的市场仓库中生成 `meta.json`、`preview.png` 与 Manifest。新主题使用 `1.0.0`，更新主题默认递增 patch 版本；市场构建、测试和 `git diff --check` 全部通过后才允许推送。外部用户使用自己的 fork，仓库 owner 使用上游功能分支，两种路径最终都只创建 PR。
 
 历史故障和恢复方式见 [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)。

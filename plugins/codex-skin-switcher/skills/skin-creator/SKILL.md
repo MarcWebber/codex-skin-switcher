@@ -1,6 +1,6 @@
 ---
 name: skin-creator
-description: Create a new local macOS Codex skin from one prompt or attached visual references, validate it, and apply it through Codex Skin Switcher. Use when the user asks to create, generate, design, or imitate a Codex skin or theme. Do not use for switching an existing skin.
+description: Create, validate, apply, or submit a local macOS Codex skin from a prompt or visual references. Use when the user asks to create, generate, design, imitate, publish, or submit a Codex skin. Do not use for switching an existing skin.
 ---
 
 # Codex Skin Creator
@@ -46,6 +46,22 @@ node "$HOME/Library/Application Support/CodexSkinSwitcher/runtime/skin.mjs" vali
 ```
 
 If validation passes, call `set_skin` with the new theme ID. Report the final prompt, theme ID, three core files, any optional supporting illustrations, and the returned switch result. Never restart or kill Codex.
+
+## Publish to the market
+
+Only publish when the current user request explicitly asks to submit or publish the skin. A creation request alone does not authorize GitHub writes. Resolve `scripts/publish.mjs` relative to this `SKILL.md`; the script validates the local theme, clones `MarcWebber/codex-skins`, creates a fork when needed, prepares the fixed market files, runs the market build and tests, pushes a feature branch, and opens a Pull Request. It never merges the PR or writes `main` directly.
+
+Before publishing, state that the theme files and artwork will become public. If third-party artwork rights are unclear, ask for confirmation. A real publication requires the script's explicit gate:
+
+```bash
+node "<this-skill-directory>/scripts/publish.mjs" \
+  --theme <theme-id> \
+  --confirm-publication
+```
+
+Use `--preview <path>` when the user selected a dedicated preview; otherwise a local `preview.png` is used, falling back to `art.png`. New themes start at `1.0.0`; updates automatically increment the existing patch version. `--version x.y.z` and `--author "Name"` override those defaults. Use `--dry-run` only when the user asks to validate the submission without creating a branch or PR.
+
+The GitHub CLI must already be authenticated. On success, report the PR URL, published version, author, branch, and changed files. On failure, report the single failing command and keep the local theme unchanged; do not retry external writes automatically.
 
 Use the following as the creation contract. Do not add or run browser tests, screenshot utilities, persistent diagnostics, or FPS checks:
 
