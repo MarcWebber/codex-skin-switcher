@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -15,12 +16,33 @@ test("market UI uses the native CDP binding instead of renderer fetch", async ()
     fs.readFile(runtimeFile, "utf8"),
   ]);
   assert.match(server, /Runtime\.addBinding/);
-  assert.match(server, /server\.once\("listening", startUiBridge\)/);
+  assert.match(server, /server\.once\("listening", \(\) => \{ stopBridge = startUiBridge\(\); \}\)/);
   assert.match(runtime, /window\[bridgeName\]\(JSON\.stringify/);
   assert.match(runtime, /event\.source !== window/);
   assert.match(runtime, /requestMarket\("market"\)/);
   assert.match(runtime, /const select = \(nextId\) => requestMarket\("select", nextId\)/);
   assert.doesNotMatch(runtime, /const response = await fetch\(marketUrl \+ "\/market/);
+});
+
+test("market transport closes when the plugin session ends", async () => {
+  const state = await fs.mkdtemp(path.join(os.tmpdir(), "codex-skin-server-test-"));
+  const child = spawn(process.execPath, [serverFile], {
+    env: { ...process.env, CODEX_SKIN_MARKET_PORT: "0", CODEX_SKIN_STATE_ROOT: state },
+    stdio: ["pipe", "ignore", "pipe"],
+  });
+  child.stdin.end();
+  let timer;
+  try {
+    const code = await Promise.race([
+      new Promise((resolve) => child.once("exit", resolve)),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("plugin server stayed alive after stdin closed")), 3000); }),
+    ]);
+    assert.equal(code, 0);
+  } finally {
+    clearTimeout(timer);
+    child.kill();
+    await fs.rm(state, { recursive: true, force: true });
+  }
 });
 
 test("market API expands the minimal manifest with theme metadata", async () => {

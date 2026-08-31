@@ -172,21 +172,39 @@ async function uiAction(action, id = "") {
 }
 
 function startUiBridge() {
-  const retry = () => setTimeout(connect, 3000).unref();
+  let stopped = false;
+  let timer = null;
+  let socket = null;
+  const retry = () => {
+    if (stopped || timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+      void connect();
+    }, 3000);
+    timer.unref();
+  };
   const connect = async () => {
+    if (stopped) return;
     try {
       const items = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(1000) }).then((response) => response.json());
       const target = items.find((item) => item.type === "page" && item.url === "app://-/index.html");
       if (!target) return retry();
-      const socket = new WebSocket(target.webSocketDebuggerUrl);
+      const connection = new WebSocket(target.webSocketDebuggerUrl);
+      socket = connection;
       await new Promise((resolve, reject) => {
-        socket.addEventListener("open", resolve, { once: true });
-        socket.addEventListener("error", reject, { once: true });
+        connection.addEventListener("open", resolve, { once: true });
+        connection.addEventListener("error", reject, { once: true });
       });
+      if (stopped) return connection.close();
       let requestId = 0;
-      const send = (method, params = {}) => socket.send(JSON.stringify({ id: ++requestId, method, params }));
-      socket.addEventListener("close", retry, { once: true });
-      socket.addEventListener("message", (event) => {
+      const send = (method, params = {}) => {
+        if (connection.readyState === WebSocket.OPEN) connection.send(JSON.stringify({ id: ++requestId, method, params }));
+      };
+      connection.addEventListener("close", () => {
+        if (socket === connection) socket = null;
+        retry();
+      }, { once: true });
+      connection.addEventListener("message", (event) => {
         const message = JSON.parse(String(event.data));
         if (message.method !== "Runtime.bindingCalled" || message.params.name !== uiBinding) return;
         void (async () => {
@@ -203,12 +221,21 @@ function startUiBridge() {
       });
       send("Runtime.enable");
       send("Runtime.addBinding", { name: uiBinding });
-    } catch { retry(); }
+    } catch {
+      socket = null;
+      retry();
+    }
   };
   void connect();
+  return () => {
+    stopped = true;
+    clearTimeout(timer);
+    if (socket?.readyState === WebSocket.OPEN) socket.close();
+  };
 }
 
 function startUiApi() {
+  let stopBridge = () => {};
   const server = http.createServer(async (request, response) => {
     try {
       const url = new URL(request.url, `http://127.0.0.1:${marketPort}`);
@@ -227,8 +254,12 @@ function startUiApi() {
   server.on("error", (error) => {
     if (error.code !== "EADDRINUSE") process.stderr.write(`皮肤市场启动失败：${error.message}\n`);
   });
-  server.once("listening", startUiBridge);
+  server.once("listening", () => { stopBridge = startUiBridge(); });
   server.listen(marketPort, "127.0.0.1");
+  return () => {
+    stopBridge();
+    if (server.listening) server.close();
+  };
 }
 
 function xml(text) {
@@ -364,9 +395,10 @@ async function handle(method, params = {}) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === sourceFile) {
+  let stopUi = () => {};
   if (process.platform === "darwin") {
     await prepare();
-    startUiApi();
+    stopUi = startUiApi();
   }
   const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
   for await (const line of input) {
@@ -384,6 +416,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === sourceFile) {
       process.stdout.write(`${JSON.stringify({ jsonrpc: "2.0", id: request.id, error: { code: error.code || -32603, message: error.message } })}\n`);
     }
   }
+  stopUi();
 }
 
 export { installMarketSkin, marketSkins, prepare };
