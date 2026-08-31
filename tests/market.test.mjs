@@ -33,6 +33,8 @@ test("market UI uses the native CDP binding instead of renderer fetch", async ()
     fs.readFile(runtimeFile, "utf8"),
   ]);
   assert.match(server, /Runtime\.addBinding/);
+  assert.match(server, /codex-skin-accepted/);
+  assert.match(server, /}, 1000\)/);
   assert.match(server, /server\.once\("listening", \(\) => \{ stopBridge = startUiBridge\(\); \}\)/);
   assert.match(runtime, /window\[bridgeName\]\(JSON\.stringify/);
   assert.match(runtime, /event\.source !== window/);
@@ -45,6 +47,9 @@ test("market UI uses the native CDP binding instead of renderer fetch", async ()
   assert.match(runtime, /heading: "下载成功"/);
   assert.match(runtime, /heading: "删除皮肤？"/);
   assert.match(runtime, /const transitionTo = async/);
+  assert.match(runtime, /pointerEvents: "none"/);
+  assert.match(runtime, /veil\.style\.opacity = "\.38"/);
+  assert.match(runtime, /皮肤服务未就绪/);
   assert.match(runtime, /#themes\{max-height:150px;overflow-y:auto/);
   assert.doesNotMatch(runtime, /localPreview/);
   assert.doesNotMatch(runtime, /const response = await fetch\(marketUrl \+ "\/market/);
@@ -91,7 +96,9 @@ test("market API expands the minimal manifest with theme metadata", async () => 
     "/skins/remote-skin/art.png": "image",
     "/skins/remote-skin/preview.png": "preview",
   };
+  let fetchCount = 0;
   globalThis.fetch = async (url) => {
+    fetchCount += 1;
     const value = files[new URL(url).pathname];
     const body = typeof value === "object" ? JSON.stringify(value) : value;
     return new Response(body || "", { status: value === undefined ? 404 : 200 });
@@ -113,6 +120,9 @@ test("market API expands the minimal manifest with theme metadata", async () => 
         installed: false,
         removable: false,
     }]);
+    const catalogFetchCount = fetchCount;
+    await marketSkins();
+    assert.equal(fetchCount, catalogFetchCount);
     assert.deepEqual(await installMarketSkin("remote-skin"), { id: "remote-skin", installed: true });
     assert.equal(await fs.readFile(path.join(state, "themes", "remote-skin", "meta.json"), "utf8"), JSON.stringify(files["/skins/remote-skin/meta.json"]));
     assert.equal((await localThemes()).find((item) => item.id === "remote-skin").removable, true);
