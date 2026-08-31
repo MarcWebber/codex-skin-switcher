@@ -37,9 +37,16 @@ test("market UI uses the native CDP binding instead of renderer fetch", async ()
   assert.match(runtime, /window\[bridgeName\]\(JSON\.stringify/);
   assert.match(runtime, /event\.source !== window/);
   assert.match(runtime, /requestMarket\("market"\)/);
+  assert.match(runtime, /requestMarket\("local"\)/);
   assert.match(runtime, /const select = \(nextId\) => requestMarket\("select", nextId\)/);
+  assert.match(server, /if \(action === "install"\) return installMarketSkin\(id\)/);
   assert.match(runtime, /item\.removable \? "删除"/);
-  assert.match(runtime, /requestMarket\(action, item\.id\)/);
+  assert.match(runtime, /requestMarket\("install", item\.id\)/);
+  assert.match(runtime, /heading: "下载成功"/);
+  assert.match(runtime, /heading: "删除皮肤？"/);
+  assert.match(runtime, /const transitionTo = async/);
+  assert.match(runtime, /#themes\{max-height:150px;overflow-y:auto/);
+  assert.doesNotMatch(runtime, /localPreview/);
   assert.doesNotMatch(runtime, /const response = await fetch\(marketUrl \+ "\/market/);
 });
 
@@ -93,8 +100,9 @@ test("market API expands the minimal manifest with theme metadata", async () => 
   process.env.CODEX_SKIN_MARKET_URL = "https://market.test";
 
   try {
-    const { installMarketSkin, marketSkins, prepare, removeMarketSkin } = await import(`${serverFile}?test=${Date.now()}`);
+    const { installMarketSkin, localThemes, marketSkins, prepare, removeMarketSkin } = await import(`${serverFile}?test=${Date.now()}`);
     await prepare();
+    assert.equal((await localThemes()).find((item) => item.id === "layla-starlight").removable, false);
     assert.deepEqual(await marketSkins(), [{
         id: "remote-skin",
         label: "远端皮肤",
@@ -107,6 +115,7 @@ test("market API expands the minimal manifest with theme metadata", async () => 
     }]);
     assert.deepEqual(await installMarketSkin("remote-skin"), { id: "remote-skin", installed: true });
     assert.equal(await fs.readFile(path.join(state, "themes", "remote-skin", "meta.json"), "utf8"), JSON.stringify(files["/skins/remote-skin/meta.json"]));
+    assert.equal((await localThemes()).find((item) => item.id === "remote-skin").removable, true);
     assert.equal((await marketSkins())[0].removable, true);
     assert.deepEqual(await removeMarketSkin("remote-skin"), { id: "remote-skin", removed: true });
     assert.equal(await fs.stat(path.join(state, "themes", "remote-skin")).catch(() => null), null);

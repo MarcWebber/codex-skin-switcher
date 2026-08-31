@@ -21,13 +21,13 @@ Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。选择非原生主题时，`
 
 首次应用时，运行时创建一个 `<style>` 和一个 Shadow DOM 顶部工具。顶部工具显式使用 `no-drag` 点击区，避免 macOS 标题栏截获鼠标。它不使用 MutationObserver、ResizeObserver 或页面轮询。
 
-主题 CSS 预先放进切换菜单。点击本地主题、市场安装和调用 `set_skin` 都先更新 `preference.json`，再由同一个 `apply` 入口替换 `<style>` 内容和根属性；不再使用 `localStorage` 保存第二份主题选择。重复应用时比较 CSS 指纹并复用当前顶部工具。选择“原生”会清空主题样式、保留切换入口并卸载 Watcher。
+主题 CSS 预先放进切换菜单。点击本地主题、确认应用已下载主题和调用 `set_skin` 都先更新 `preference.json`，再由同一个 `apply` 入口替换 `<style>` 内容和根属性；顶部操作在替换前后使用一个约 370 毫秒的轻量遮罩过渡，不增加动画循环。重复应用时比较 CSS 指纹并复用当前顶部工具。选择“原生”会清空主题样式、保留切换入口并卸载 Watcher。
 
 “创建皮肤”只在空输入框中插入 Codex 原生的 `codex-skin-switcher:skin-creator` Skill mention 和可编辑的“风格：”，不会覆盖已有输入，也不会自动发送。
 
-“皮肤市场”与本地列表复用同一个 Shadow DOM 弹层。顶部工具通过 Codex 已开启的本机 CDP binding 发送固定的读取、安装和切换动作，由占用 `127.0.0.1:9336` 的插件进程处理，再用 `postMessage` 返回结果；页面自身不发起网络请求，也不需要放宽 CSP。打开市场时才从 GitHub Raw 的明确分支引用 `refs/heads/main` 读取远端 `manifest.json`，然后按固定目录规则读取每套皮肤的 `theme.json`、`meta.json` 和 `preview.png`。Manifest 只包含主题目录 ID，不重复保存路径或文件清单。搜索只过滤已经加载到内存的数据。
+“皮肤市场”与本地列表复用同一个 Shadow DOM 弹层。顶部工具通过 Codex 已开启的本机 CDP binding 发送固定的读取、安装和切换动作，由占用 `127.0.0.1:9336` 的插件进程处理，再用 `postMessage` 返回结果；页面自身不发起网络请求，也不需要放宽 CSP。本地列表最多显示五项并在超出后滚动，只保留名称、当前状态与非内置主题的删除入口；预览图只在市场使用。打开市场时才从 GitHub Raw 的明确分支引用 `refs/heads/main` 读取远端 `manifest.json`，然后按固定目录规则读取每套皮肤的 `theme.json`、`meta.json` 和 `preview.png`。Manifest 只包含主题目录 ID，不重复保存路径或文件清单。搜索只过滤已经加载到内存的数据。
 
-下载时 `server.mjs` 只读取固定名称的核心文件和可选插图，先写入临时目录，通过 `skin.mjs validate --folder` 校验后再改名安装。成功后直接应用新主题；失败只删除临时目录并显示错误，不影响现有主题。市场安装的主题可以在同一张卡片上删除；删除当前主题时先恢复原生界面，内置 Demo 始终保留。
+下载时 `server.mjs` 只读取固定名称的核心文件和可选插图，先写入临时目录，通过 `skin.mjs validate --folder` 校验后再改名安装。成功后显示“下载成功”，等待用户选择应用或稍后；失败只删除临时目录并显示错误，不影响现有主题。市场卡片与本地列表都可删除非内置主题，两个入口复用同一个确认弹窗和删除动作；删除当前主题时先恢复原生界面，内置 Demo 始终保留。
 
 ## 三文件主题
 

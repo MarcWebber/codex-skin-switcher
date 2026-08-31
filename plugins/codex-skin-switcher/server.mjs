@@ -92,6 +92,11 @@ async function bundledThemes() {
   return new Set(entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name));
 }
 
+async function localThemes() {
+  const [list, bundled] = await Promise.all([themes(), bundledThemes()]);
+  return list.map((theme) => ({ ...theme, removable: !bundled.has(theme.id) }));
+}
+
 async function liveSkin(ready) {
   if (!ready) return "native";
   const result = await callRuntime("inspect");
@@ -185,12 +190,10 @@ function sendJson(response, status, value) {
 }
 
 async function uiAction(action, id = "") {
+  if (action === "local") return { themes: await localThemes() };
   if (action === "market") return { skins: await marketSkins() };
   if (action === "select") return setSkin(id);
-  if (action === "install") {
-    await installMarketSkin(id);
-    return setSkin(id);
-  }
+  if (action === "install") return installMarketSkin(id);
   if (action === "remove") return removeMarketSkin(id);
   throw new Error("未知市场操作");
 }
@@ -263,6 +266,9 @@ function startUiApi() {
   const server = http.createServer(async (request, response) => {
     try {
       const url = new URL(request.url, `http://127.0.0.1:${marketPort}`);
+      if (request.method === "GET" && url.pathname === "/local") {
+        return sendJson(response, 200, await uiAction("local"));
+      }
       if (request.method === "GET" && url.pathname === "/market") {
         return sendJson(response, 200, await uiAction("market"));
       }
@@ -445,4 +451,4 @@ if (process.argv[1] && path.resolve(process.argv[1]) === sourceFile) {
   stopUi();
 }
 
-export { installMarketSkin, marketSkins, prepare, removeMarketSkin };
+export { installMarketSkin, localThemes, marketSkins, prepare, removeMarketSkin };

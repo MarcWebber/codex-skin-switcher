@@ -203,10 +203,15 @@ async function apply(id) {
       #market:hover,#back:hover{border-color:color-mix(in srgb,var(--skin-accent,#789bdc) 22%,transparent);background:color-mix(in srgb,var(--skin-accent,#789bdc) 10%,var(--skin-control,#fdfdff));color:var(--skin-accent,#789bdc)}
       #market svg,#back svg{width:14px;height:14px}
       #marketHeader{gap:4px;padding-left:1px}
-      .item{width:100%;display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border:1px solid transparent;border-radius:8px;color:var(--skin-text,#3a4265);background:transparent;text-align:left;font-size:12px}
+      #themes{max-height:150px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--skin-accent,#789bdc) 35%,transparent) transparent}
+      .localRow{height:30px;display:flex;align-items:center;gap:3px}
+      .item{min-width:0;flex:1;height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;border:1px solid transparent;border-radius:8px;color:var(--skin-text,#3a4265);background:transparent;text-align:left;font-size:12px}
       .item:hover,.item[aria-pressed=true]{border-color:color-mix(in srgb,var(--skin-accent,#789bdc) 20%,transparent);background:color-mix(in srgb,var(--skin-accent,#789bdc) 11%,var(--skin-control,#fdfdff))}
       .mark{visibility:hidden;color:var(--skin-accent,#789bdc);font-weight:800}
       .item[aria-pressed=true] .mark{visibility:visible}
+      .localDelete{width:25px;height:25px;display:grid;place-items:center;padding:0;border:1px solid transparent;border-radius:7px;color:var(--skin-muted,#747b9b);background:transparent}
+      .localDelete:hover{border-color:color-mix(in srgb,#c85a69 28%,transparent);background:color-mix(in srgb,#c85a69 8%,var(--skin-control,#fdfdff));color:#a94251}
+      .localDelete svg{width:12px;height:12px}
       #create{width:auto;height:27px;display:flex;align-items:center;justify-content:center;gap:5px;margin:6px auto 0;padding:0 9px;border:0;border-radius:8px;color:var(--skin-on-accent,var(--skin-text,#283052));background:linear-gradient(135deg,color-mix(in srgb,var(--skin-accent,#789bdc) 48%,white),var(--skin-accent,#a9c3ef));font-size:11px;font-weight:700}
       #create svg{width:12px;height:12px}
       #search{height:30px;display:flex;align-items:center;gap:6px;margin:1px 3px 7px;padding:0 9px;border:1px solid color-mix(in srgb,var(--skin-accent,#789bdc) 22%,var(--skin-border,transparent));border-radius:9px;background:color-mix(in srgb,var(--skin-control,#fdfdff) 92%,var(--skin-accent,#789bdc));color:var(--skin-muted,#747b9b)}
@@ -227,7 +232,20 @@ async function apply(id) {
       .install:disabled{cursor:default;background:color-mix(in srgb,var(--skin-accent,#789bdc) 12%,var(--skin-control,#fdfdff));color:var(--skin-accent,#789bdc)}
       #marketStatus{padding:10px 6px;text-align:center;color:var(--skin-muted,#747b9b);font-size:10px}
       #retry{height:24px;margin-left:5px;padding:0 7px;border:1px solid var(--skin-border,rgba(103,112,169,.2));border-radius:7px;background:var(--skin-control,#fdfdff);color:var(--skin-text,#283052);font-size:10px}
+      #confirmView{padding:5px 4px 2px}
+      #confirmTitle{color:var(--skin-text,#283052);font-size:12px;font-weight:750}
+      #confirmText{margin-top:6px;color:var(--skin-muted,#747b9b);font-size:10px;line-height:1.5}
+      #confirmActions{display:flex;justify-content:flex-end;gap:6px;margin-top:11px}
+      #confirmCancel,#confirmPrimary{height:25px;padding:0 9px;border:1px solid color-mix(in srgb,var(--skin-accent,#789bdc) 24%,transparent);border-radius:7px;background:transparent;color:var(--skin-text,#283052);font-size:10px;font-weight:700}
+      #confirmPrimary{background:var(--skin-accent,#789bdc);color:white}
+      #confirmPrimary.danger{border-color:#b84b5a;background:#b84b5a}
+      #confirmPrimary:disabled{cursor:default;opacity:.6}
     </style><div id="bar"><button type="button" id="toggle" aria-label="打开皮肤选择"><svg id="palette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3a9 9 0 0 0 0 18h1.3a1.7 1.7 0 0 0 1.1-3c-.7-.6-.3-1.8.6-1.8h1A5 5 0 0 0 21 11c0-4.4-4-8-9-8Z"/><circle cx="7.5" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="6.8" r="1" fill="currentColor" stroke="none"/><circle cx="14.2" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="10.2" r="1" fill="currentColor" stroke="none"/></svg><span id="label">原生</span><svg id="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 6 4 4 4-4"/></svg></button><button type="button" id="collapse" aria-label="收起皮肤工具" title="收起为调色板图标"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.2 8s2.1-3 5.8-3 5.8 3 5.8 3-2.1 3-5.8 3-5.8-3-5.8-3Z"/><path d="m3 3 10 10"/></svg></button></div><div id="panel" hidden><div id="switchView"><div id="header"><div id="title">切换皮肤</div><button type="button" id="market" aria-label="打开皮肤市场" title="皮肤市场"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9h16v11H4zM3 9l2-5h14l2 5"/><path d="M8 20v-6h4v6M3 9c0 1.3 1 2 2.3 2S8 10.3 8 9c0 1.3 1 2 2.7 2S13 10.3 13 9c0 1.3 1 2 2.7 2S19 10.3 19 9"/></svg></button></div><div id="themes"></div><button type="button" id="create" aria-label="用提示词创建皮肤" title="用提示词创建皮肤"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2v12M2 8h12"/></svg><span>创建皮肤</span></button></div><div id="marketView" hidden><div id="marketHeader"><button type="button" id="back" aria-label="返回本地皮肤"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m10 3-5 5 5 5"/></svg></button><div id="marketTitle">皮肤市场</div></div><label id="search"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg><input id="query" type="search" placeholder="搜索皮肤"></label><div id="marketStatus"></div><div id="marketList"></div></div></div>\`;
+    const confirmView = document.createElement("div");
+    confirmView.id = "confirmView";
+    confirmView.hidden = true;
+    confirmView.innerHTML = '<div id="confirmTitle"></div><div id="confirmText"></div><div id="confirmActions"><button type="button" id="confirmCancel">取消</button><button type="button" id="confirmPrimary">确定</button></div>';
+    shadow.getElementById("panel").appendChild(confirmView);
     shadow.addEventListener("pointerdown", (event) => event.stopPropagation());
     const toggle = shadow.getElementById("toggle");
     const panel = shadow.getElementById("panel");
@@ -240,6 +258,10 @@ async function apply(id) {
     const marketList = shadow.getElementById("marketList");
     const marketStatus = shadow.getElementById("marketStatus");
     const query = shadow.getElementById("query");
+    const confirmTitle = shadow.getElementById("confirmTitle");
+    const confirmText = shadow.getElementById("confirmText");
+    const confirmCancel = shadow.getElementById("confirmCancel");
+    const confirmPrimary = shadow.getElementById("confirmPrimary");
     let bridgeRequestId = 0;
     const requestMarket = (action, id = "") => new Promise((resolve, reject) => {
       const requestId = ++bridgeRequestId;
@@ -259,7 +281,11 @@ async function apply(id) {
       if (typeof window[bridgeName] !== "function") return finish(reject, new Error("市场连接未就绪"));
       window[bridgeName](JSON.stringify({ requestId, action, id }));
     });
-    const options = [{ id: "native", label: "原生" }, ...themes];
+    let localItems = [{ id: "native", label: "原生", removable: false }, ...themes.map((theme) => ({
+      id: theme.id,
+      label: theme.label,
+      removable: false,
+    }))];
     let marketItems = [];
     const activate = (nextId) => {
       const next = themes.find((theme) => theme.id === nextId);
@@ -273,28 +299,35 @@ async function apply(id) {
       window[key].id = next?.id || "native";
       window[key].fingerprint = next?.fingerprint || "toolbar-native";
       label.textContent = next?.label || "原生";
-      for (const button of list.querySelectorAll("button")) button.setAttribute("aria-pressed", String(button.dataset.id === (next?.id || "native")));
+      for (const button of list.querySelectorAll(".item")) button.setAttribute("aria-pressed", String(button.dataset.id === (next?.id || "native")));
       panel.hidden = true;
     };
     const select = (nextId) => requestMarket("select", nextId);
-    for (const option of options) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "item";
-      button.dataset.id = option.id;
-      button.innerHTML = "<span></span><span class=mark>✓</span>";
-      button.firstElementChild.textContent = option.label;
-      button.onclick = async () => {
-        title.textContent = "切换中…";
-        try {
-          await select(option.id);
-          title.textContent = "切换皮肤";
-        } catch (error) {
-          title.textContent = error.message;
-        }
-      };
-      list.appendChild(button);
-    }
+    const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+    const transitionTo = async (nextId) => {
+      document.getElementById("codex-skin-transition")?.remove();
+      const veil = document.createElement("div");
+      veil.id = "codex-skin-transition";
+      Object.assign(veil.style, {
+        position: "fixed",
+        inset: "0",
+        zIndex: "2147483647",
+        pointerEvents: "all",
+        background: getComputedStyle(document.documentElement).getPropertyValue("--skin-canvas").trim() || "#f7f8fc",
+        opacity: "0",
+        transition: "opacity 180ms ease",
+      });
+      document.body.appendChild(veil);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      veil.style.opacity = ".94";
+      await wait(150);
+      try {
+        return await select(nextId);
+      } finally {
+        veil.style.opacity = "0";
+        setTimeout(() => veil.remove(), 220);
+      }
+    };
     const setCollapsed = (collapsed) => {
       host.toggleAttribute("data-collapsed", collapsed);
       localStorage.setItem(collapsedKey, collapsed ? "1" : "0");
@@ -306,6 +339,103 @@ async function apply(id) {
       panel.dataset.view = "local";
       switchView.hidden = false;
       marketView.hidden = true;
+      confirmView.hidden = true;
+    };
+    const showMarket = () => {
+      panel.dataset.view = "market";
+      switchView.hidden = true;
+      marketView.hidden = false;
+      confirmView.hidden = true;
+    };
+    const showConfirm = ({ heading, text, primary, cancel = "取消", danger = false, onCancel, onConfirm }) => {
+      panel.dataset.view = "confirm";
+      switchView.hidden = true;
+      marketView.hidden = true;
+      confirmView.hidden = false;
+      panel.hidden = false;
+      confirmTitle.textContent = heading;
+      confirmText.textContent = text;
+      confirmCancel.textContent = cancel;
+      confirmPrimary.textContent = primary;
+      confirmPrimary.classList.toggle("danger", danger);
+      confirmPrimary.disabled = false;
+      confirmCancel.onclick = onCancel;
+      confirmPrimary.onclick = async () => {
+        confirmPrimary.disabled = true;
+        confirmPrimary.textContent = primary + "中…";
+        try {
+          await onConfirm();
+        } catch (error) {
+          confirmText.textContent = error.message;
+          confirmPrimary.disabled = false;
+          confirmPrimary.textContent = primary;
+        }
+      };
+    };
+    const confirmRemove = (item, returnView) => showConfirm({
+      heading: "删除皮肤？",
+      text: "将从本机删除“" + item.label + "”。" + (window[key]?.id === item.id ? "删除后会恢复原生界面。" : ""),
+      primary: "删除",
+      danger: true,
+      onCancel: returnView,
+      onConfirm: async () => {
+        await requestMarket("remove", item.id);
+        localItems = localItems.filter((local) => local.id !== item.id);
+        const themeIndex = themes.findIndex((theme) => theme.id === item.id);
+        if (themeIndex >= 0) themes.splice(themeIndex, 1);
+        const marketItem = marketItems.find((skin) => skin.id === item.id);
+        if (marketItem) {
+          marketItem.installed = false;
+          marketItem.removable = false;
+        }
+        renderLocal();
+        renderMarket();
+        returnView();
+      },
+    });
+    const renderLocal = () => {
+      list.replaceChildren();
+      for (const item of localItems) {
+        const row = document.createElement("div");
+        row.className = "localRow";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "item";
+        button.dataset.id = item.id;
+        button.setAttribute("aria-pressed", String(item.id === (window[key]?.id || requested)));
+        button.innerHTML = "<span></span><span class=mark>✓</span>";
+        button.firstElementChild.textContent = item.label;
+        button.onclick = async () => {
+          title.textContent = "切换中…";
+          try {
+            await transitionTo(item.id);
+            title.textContent = "切换皮肤";
+          } catch (error) {
+            title.textContent = error.message;
+          }
+        };
+        row.appendChild(button);
+        if (item.removable) {
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "localDelete";
+          remove.title = "删除 " + item.label;
+          remove.setAttribute("aria-label", "删除 " + item.label);
+          remove.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.8h4V4m2 0-.6 9H4.6L4 4m2.3 2.2v4.6m3.4-4.6v4.6"/></svg>';
+          remove.onclick = () => confirmRemove(item, showLocal);
+          row.appendChild(remove);
+        }
+        list.appendChild(row);
+      }
+    };
+    const loadLocal = async () => {
+      try {
+        const result = await requestMarket("local");
+        if (Array.isArray(result.themes)) {
+          localItems = [{ id: "native", label: "原生", removable: false }, ...result.themes];
+        }
+      } catch {}
+      renderLocal();
     };
     const renderMarket = () => {
       const term = query.value.trim().toLocaleLowerCase();
@@ -339,25 +469,26 @@ async function apply(id) {
         install.textContent = item.removable ? "删除" : item.installed ? "已安装" : "下载";
         install.disabled = item.installed && !item.removable;
         install.onclick = async () => {
-          const action = item.removable ? "remove" : "install";
+          if (item.removable) return confirmRemove(item, showMarket);
           install.disabled = true;
-          install.textContent = action === "remove" ? "删除中" : "下载中";
+          install.textContent = "下载中";
           try {
-            await requestMarket(action, item.id);
-            if (action === "remove") {
-              item.installed = false;
-              item.removable = false;
-              for (const button of list.querySelectorAll(".item")) {
-                if (button.dataset.id === item.id) button.remove();
-              }
-            } else {
-              item.installed = true;
-              item.removable = true;
-            }
+            await requestMarket("install", item.id);
+            item.installed = true;
+            item.removable = true;
+            await loadLocal();
             renderMarket();
+            showConfirm({
+              heading: "下载成功",
+              text: "“" + item.label + "”已保存到本机，是否现在应用？",
+              primary: "应用",
+              cancel: "稍后",
+              onCancel: showMarket,
+              onConfirm: () => transitionTo(item.id),
+            });
           } catch (error) {
             install.disabled = false;
-            install.textContent = action === "remove" ? "重试删除" : "重试";
+            install.textContent = "重试";
             marketStatus.hidden = false;
             marketStatus.textContent = error.message;
           }
@@ -392,17 +523,19 @@ async function apply(id) {
       if (panel.hidden) {
         showLocal();
         panel.hidden = false;
+        void loadLocal();
       } else panel.hidden = true;
     };
     collapse.onclick = () => setCollapsed(true);
     shadow.getElementById("market").onclick = () => {
-      panel.dataset.view = "market";
-      switchView.hidden = true;
-      marketView.hidden = false;
+      showMarket();
       query.value = "";
       loadMarket();
     };
-    shadow.getElementById("back").onclick = showLocal;
+    shadow.getElementById("back").onclick = () => {
+      showLocal();
+      void loadLocal();
+    };
     query.oninput = renderMarket;
     shadow.getElementById("create").onclick = () => {
       panel.hidden = true;
@@ -427,6 +560,7 @@ async function apply(id) {
     };
     window[key] = { id: requested, fingerprint: null, bundleFingerprint, activate, cleanup };
     const initial = requested;
+    renderLocal();
     activate(initial);
     setCollapsed(localStorage.getItem(collapsedKey) === "1");
     return { ok: true, id: initial, unchanged: false };
