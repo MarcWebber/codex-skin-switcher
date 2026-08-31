@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  macOS Codex 本地皮肤切换器：一键换肤、提示词创建、市场下载与原生回退。
+  macOS Codex 本地皮肤切换器：一键换肤、一键创建、一键投稿、一键下载。
 </p>
 
 <p align="center">
@@ -51,7 +51,7 @@ codex plugin marketplace add MarcWebber/codex-skin-switcher && codex plugin add 
   <br><sub>同一个菜单里可以切换主题、恢复原生或删除本地皮肤。</sub>
 </p>
 
-首次切换时，如果当前 Codex 没有开启本机调试端口，正常退出一次再重新打开。Watcher 只在下一次启动时补充本机 `9335` 参数并恢复主题，不会强制退出正在使用的 Codex。
+首次切换时，如果当前 Codex 没有开启本机调试端口，正常退出一次再重新打开。
 
 ### 2.4 恢复
 
@@ -102,17 +102,20 @@ codex plugin marketplace add MarcWebber/codex-skin-switcher && codex plugin add 
 
 ### 3.5 菜单
 
-个人菜单和帮助菜单会继续使用当前主题的背景，不会在打开弹层时突然变回纯色。
+个人菜单和帮助菜单都支持独立定制，并继续使用当前主题的背景。
 
-<p align="center">
-  <img src="./plugins/codex-skin-switcher/assets/screenshots/profile-menu.png" width="460" alt="个人菜单主题效果">
-  <br><sub>个人菜单</sub>
-</p>
-
-<p align="center">
-  <img src="./plugins/codex-skin-switcher/assets/screenshots/help-submenu.png" width="460" alt="帮助菜单主题效果">
-  <br><sub>帮助菜单</sub>
-</p>
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="./plugins/codex-skin-switcher/assets/screenshots/profile-menu.png" alt="个人菜单主题效果">
+      <br><sub>个人菜单</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="./plugins/codex-skin-switcher/assets/screenshots/help-submenu.png" alt="帮助菜单主题效果">
+      <br><sub>帮助菜单</sub>
+    </td>
+  </tr>
+</table>
 
 ## 4. 创建皮肤
 
@@ -138,7 +141,9 @@ extra.css
 art.png
 ```
 
-`theme.json` 保存名称、顺序、颜色、字体、背景位置与透明度；`extra.css` 保存当前主题独有样式；`art.png` 是全窗口主体背景。
+- `theme.json` 保存名称、顺序、颜色、字体、背景位置与透明度。
+- `extra.css` 保存当前主题独有样式。
+- `art.png` 是全窗口主体背景。
 
 人物主题还可以增加固定名称的 `profile-art.png`、`help-art.png` 和 `home-card-a.png` 到 `home-card-d.png`。缺少可选图片时自动回退到 `art.png`。
 
@@ -162,7 +167,7 @@ Skin Creator 会说明主题文件与图片将公开，然后自动创建功能�
 
 ![Codex Skin Switcher 项目架构](./plugins/codex-skin-switcher/assets/architecture.png)
 
-平时只需要使用顶部的 Skin Switcher。它从本机读取主题，负责切换、删除和恢复原生界面。Skin Creator 把提示词和参考图做成主题；想分享时，再通过 Pull Request 投稿到 `codex-skins`。皮肤市场只在打开时读取主题列表。
+Skin Switcher 从本机读取主题，负责切换、删除和恢复原生界面。Skin Creator 把提示词和参考图做成主题；想分享时，再通过 Pull Request 投稿到 `codex-skins`。皮肤市场只在打开时读取主题列表。
 
 | 模块 | 职责 |
 | --- | --- |
@@ -201,6 +206,6 @@ Skin Creator 会说明主题文件与图片将公开，然后自动创建功能�
 - [MarcWebber/codex-skin-switcher](https://github.com/MarcWebber/codex-skin-switcher)
 - [MarcWebber/codex-skins](https://github.com/MarcWebber/codex-skins)
 
-## 10. Windows
+## 10. Welcome Windows Support
 
 当前实现与回归范围仍是 macOS。欢迎通过 Issue 或 Pull Request 参与 Windows 启动、路径处理和界面回归适配；Windows 支持会在完成真实平台验证后正式标注。
