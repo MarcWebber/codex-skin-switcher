@@ -25,7 +25,7 @@ Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。选择非原生主题时，`
 
 “创建皮肤”只在空输入框中插入 Codex 原生的 `codex-skin-switcher:skin-creator` Skill mention 和可编辑的“风格：”，不会覆盖已有输入，也不会自动发送。
 
-“皮肤市场”与本地列表复用同一个 Shadow DOM 弹层。顶部工具通过 Codex 已开启的本机 CDP binding 发送固定的读取、安装和切换动作，由占用 `127.0.0.1:9336` 的插件进程处理，再用 `postMessage` 返回结果；页面自身不发起网络请求，也不需要放宽 CSP。打开市场时才读取远端 `manifest.json`，然后按固定目录规则读取每套皮肤的 `theme.json`、`meta.json` 和 `preview.png`。Manifest 只包含主题目录 ID，不重复保存路径或文件清单。搜索只过滤已经加载到内存的数据。
+“皮肤市场”与本地列表复用同一个 Shadow DOM 弹层。顶部工具通过 Codex 已开启的本机 CDP binding 发送固定的读取、安装和切换动作，由占用 `127.0.0.1:9336` 的插件进程处理，再用 `postMessage` 返回结果；页面自身不发起网络请求，也不需要放宽 CSP。打开市场时才从 GitHub Raw 的明确分支引用 `refs/heads/main` 读取远端 `manifest.json`，然后按固定目录规则读取每套皮肤的 `theme.json`、`meta.json` 和 `preview.png`。Manifest 只包含主题目录 ID，不重复保存路径或文件清单。搜索只过滤已经加载到内存的数据。
 
 下载时 `server.mjs` 只读取固定名称的核心文件和可选插图，先写入临时目录，通过 `skin.mjs validate --folder` 校验后再改名安装。成功后直接应用新主题；失败只删除临时目录并显示错误，不影响现有主题。市场安装的主题可以在同一张卡片上删除；删除当前主题时先恢复原生界面，内置 Demo 始终保留。
 
