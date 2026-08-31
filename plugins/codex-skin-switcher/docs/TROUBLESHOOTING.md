@@ -10,7 +10,7 @@
 恢复 Codex 原生界面
 ```
 
-如果插件入口不可用，可以正常退出 Codex，再停用 Watcher，并把相关文件改名留作备份：
+如果插件入口不可用，可以先在终端停用 Watcher，并把相关文件改名留作备份：
 
 ```bash
 launchctl bootout "gui/$(id -u)/com.codex-skin-switcher" 2>/dev/null || true
@@ -20,11 +20,11 @@ mv "$HOME/Library/Application Support/CodexSkinSwitcher/preference.json" \
   "$HOME/Library/Application Support/CodexSkinSwitcher/preference.json.disabled" 2>/dev/null || true
 ```
 
-然后从 Dock 或 Applications 正常打开 Codex。
+然后正常退出 Codex，再从 Dock 或 Applications 打开。
 
 ## Watcher 做了什么
 
-选择非原生皮肤后，`com.codex-skin-switcher` 等待当前 Codex 正常退出，再执行：
+插件启动后，`com.codex-skin-switcher` 会保持运行并等待当前 Codex 正常退出，再执行：
 
 ```bash
 open -n "/Applications/ChatGPT.app" --args \
@@ -32,7 +32,7 @@ open -n "/Applications/ChatGPT.app" --args \
   --remote-debugging-address=127.0.0.1
 ```
 
-随后它恢复当前主题，并继续等待下一次正常退出。启动或注入失败时，Watcher 会发送一次 macOS 通知、删除自己的 plist 并正常退出。此后从 Dock 正常打开 Codex，不再携带调试参数，也不会循环重试或写 `recovery.json`。选择“原生”同样会卸载它。
+随后它恢复当前主题，并继续等待下一次正常退出。选择“原生”只会清空主题样式，顶部入口和 Watcher 仍然保留。启动或注入失败时，Watcher 会发送一次 macOS 通知、删除自己的 plist 并正常退出；它不会循环重试或写 `recovery.json`。
 
 Watcher 只识别 `Contents/MacOS/ChatGPT` 主可执行文件。tmux、CLI、小助手或 Codex 自己启动的 Node/Helper 进程即使位于应用包内，也不会阻止 Watcher 在主窗口退出后恢复皮肤。
 

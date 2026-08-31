@@ -312,11 +312,16 @@ async function ensureWatcher(app) {
 <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
 <key>ProcessType</key><string>Background</string>
 </dict></plist>\n`;
-  if (await fs.readFile(plistFile, "utf8").catch(() => null) === plist) return;
-  await fs.writeFile(plistFile, plist);
   const domain = `gui/${process.getuid()}`;
-  await run("/bin/launchctl", ["bootout", `${domain}/${watcherLabel}`], 5000);
-  const started = await run("/bin/launchctl", ["bootstrap", domain, plistFile], 5000);
+  const target = `${domain}/${watcherLabel}`;
+  const loaded = (await run("/bin/launchctl", ["print", target], 5000)).ok;
+  if (await fs.readFile(plistFile, "utf8").catch(() => null) !== plist || !loaded) {
+    if (loaded) await run("/bin/launchctl", ["bootout", target], 5000);
+    await fs.writeFile(plistFile, plist);
+    const registered = await run("/bin/launchctl", ["bootstrap", domain, plistFile], 5000);
+    if (!registered.ok) throw new Error(`Watcher 注册失败：${registered.error}`);
+  }
+  const started = await run("/bin/launchctl", ["kickstart", target], 5000);
   if (!started.ok) throw new Error(`Watcher 启动失败：${started.error}`);
 }
 
@@ -345,17 +350,9 @@ async function status(message = null) {
 }
 
 async function setSkin(preset) {
-  if (preset === "native") {
-    await writeJson(preferenceFile, { preset });
-    if (await cdpReady()) {
-      const applied = await callRuntime("apply", ["--theme", preset, "--creator-skill-path", creatorSkillPath], 12000);
-      if (!applied.ok) throw new Error(applied.error);
-    }
-    await disableWatcher();
-    return status("已恢复 Codex 原生界面，Watcher 已关闭。");
-  }
-
-  const selected = (await themes()).find((item) => item.id === preset);
+  const selected = preset === "native"
+    ? { id: "native", label: "Codex 原生界面" }
+    : (await themes()).find((item) => item.id === preset);
   if (!selected) throw new Error(`未知皮肤：${preset}`);
   await writeJson(preferenceFile, { preset });
 
@@ -364,7 +361,7 @@ async function setSkin(preset) {
   await ensureWatcher(app);
 
   if (!await cdpReady()) {
-    return status(`已保存 ${selected.label}；正常退出 Codex 后，Watcher 会带本机调试参数重开一次并恢复主题。`);
+    return status(`已保存 ${selected.label}；正常退出 Codex 后，Watcher 会带本机调试参数重开并保持皮肤入口。`);
   }
 
   const applied = await callRuntime("apply", ["--theme", preset, "--creator-skill-path", creatorSkillPath], 12000);
@@ -372,7 +369,7 @@ async function setSkin(preset) {
     await disableWatcher();
     throw new Error(`皮肤注入失败，Watcher 已关闭；下次请正常打开 Codex：${applied.error}`);
   }
-  return status(`已切换到 ${selected.label}。`);
+  return status(preset === "native" ? "已恢复 Codex 原生界面，皮肤入口保持可用。" : `已切换到 ${selected.label}。`);
 }
 
 const statusSchema = {
@@ -430,6 +427,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === sourceFile) {
   let stopUi = () => {};
   if (process.platform === "darwin") {
     await prepare();
+    if (!process.env.CODEX_SKIN_STATE_ROOT) {
+      const app = await findCodexApp();
+      if (app) await ensureWatcher(app);
+    }
     stopUi = startUiApi();
   }
   const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
