@@ -60,10 +60,4 @@ art.png      # 本地背景图
 
 宿主选择器只对应当前 Codex 页面结构。升级 Codex 后如果 DOM 变化，应直接更新 `base.css` 的当前映射，不新增旧版兼容分支。
 
-## 校验边界
-
-`skin.mjs validate` 是创建或下载皮肤时的一次性格式检查：读取主题并检查核心文件、必填变量、变量值与 CSS 作用域。它不连接 Codex。项目不包含截图工具、FPS 检测或常驻诊断进程；Watcher 只负责启动与主题恢复。
-
-投稿脚本复用同一个主题校验，并在临时克隆的市场仓库中生成 `meta.json`、`preview.png` 与 Manifest。新主题使用 `1.0.0`，更新主题默认递增 patch 版本；市场构建、测试和 `git diff --check` 全部通过后才允许推送。外部用户使用自己的 fork，仓库 owner 使用上游功能分支，两种路径最终都只创建 PR。
-
 历史故障和恢复方式见 [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)。
