@@ -82,6 +82,12 @@ MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用
 
 `skin-creator` 会生成主题文件，做一次格式检查，然后应用新主题。它不会增加截图脚本、常驻测试进程或 FPS 检测。
 
+### 从市场下载
+
+打开顶部皮肤菜单，点击右上角的小店铺图标。市场只在此时读取公开 Manifest；搜索在已加载的名称、描述、作者和 ID 中进行，不会持续联网。
+
+点击“下载”后，主题先保存到本机并完成校验。下载成功不会立即切换，而是由你选择“应用”或“稍后”。已下载主题可以从市场或本地切换列表删除，两处都会先显示确认弹窗；内置 Demo 不可删除。
+
 ## 内置 Demo 与皮肤市场
 
 | 主题 | 说明 |
@@ -119,6 +125,22 @@ home-card-d.png
 ```
 
 缺少可选图片时会回退到 `art.png`。新增主题目录后，切换面板会自动发现，不需要重新安装插件。
+
+## 投稿皮肤
+
+`skin-creator` 当前只创建和调试本地主题，不会自动提交 GitHub Pull Request。要把主题加入公共市场：
+
+1. Fork 或克隆 [`MarcWebber/codex-skins`](https://github.com/MarcWebber/codex-skins)，并创建功能分支。
+2. 将本地主题复制到 `skins/<theme-id>/`，补充固定文件 `meta.json` 和 `preview.png`。
+3. 在市场仓库运行 `npm run build`，由目录名自动生成 `manifest.json`；不要手工维护路径或文件清单。
+4. 运行 `npm test`，确认目录、必需文件和 Manifest 一致。
+5. 推送功能分支并向 `MarcWebber/codex-skins:main` 发起 Pull Request。
+
+如果后续增加“一键投稿”，它应作为本地 Skill 调用 `gh` 完成分支、提交、推送和 PR，并在外部写入前让用户确认；皮肤面板本身不应持有 GitHub Token，也不应直接写入市场仓库。
+
+## 推广边界
+
+当前安装、切换、创建、市场下载、确认删除和原生恢复链路已经可以面向 macOS 用户推广。公开介绍时应同时说明三项边界：目前是 **macOS only**；只维护当前 Codex 页面结构；角色或第三方素材不因本项目的 MIT License 获得再授权。面向更大范围推广前，应为两个 GitHub 仓库的 `main` 配置分支保护，并以 Pull Request 作为默认发布入口。
 
 ## 故障恢复
 
