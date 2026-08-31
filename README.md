@@ -64,7 +64,7 @@ MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用
 顶部工具可以折叠为调色板图标；再次点击即可展开。
 “创建皮肤”会在空输入框中插入蓝色的原生 `skin-creator` Skill mention，并留下可编辑的“风格：”；补充完风格后再由你手动发送。
 
-切换菜单右上角的小店铺图标会在同一个弹层中打开皮肤市场，不叠加第二个窗口。市场打开时读取 [`MarcWebber/codex-skins`](https://github.com/MarcWebber/codex-skins) 的极简 Manifest，并支持本地搜索、滚动浏览、版本显示和一键下载安装。返回箭头会回到原来的纯名称切换列表。
+切换菜单右上角的小店铺图标会在同一个弹层中打开皮肤市场，不叠加第二个窗口。市场打开时读取 [`MarcWebber/codex-skins`](https://github.com/MarcWebber/codex-skins) 的极简 Manifest，并支持本地搜索、滚动浏览、版本显示、一键下载安装和删除已下载皮肤。下载成功后仍会立即切换到新皮肤；内置 Demo 不提供删除按钮。返回箭头会回到原来的纯名称切换列表。
 
 ![原生 Skin Creator mention 与参考图](./plugins/codex-skin-switcher/assets/screenshots/skin-creator.png)
 

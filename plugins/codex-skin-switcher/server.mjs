@@ -87,6 +87,11 @@ async function cdpReady() {
   return (await callRuntime("probe", [], 3000)).ok;
 }
 
+async function bundledThemes() {
+  const entries = await fs.readdir(path.join(root, "runtime", "themes"), { withFileTypes: true });
+  return new Set(entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name));
+}
+
 async function liveSkin(ready) {
   if (!ready) return "native";
   const result = await callRuntime("inspect");
@@ -106,7 +111,10 @@ async function marketSkins() {
   if (!Array.isArray(manifest) || !manifest.every((id) => typeof id === "string" && themePattern.test(id))) {
     throw new Error("市场 Manifest 格式错误");
   }
-  const installed = new Set((await themes()).map((theme) => theme.id));
+  const [installed, bundled] = await Promise.all([
+    themes().then((items) => new Set(items.map((theme) => theme.id))),
+    bundledThemes(),
+  ]);
   return Promise.all(manifest.map(async (id) => {
     const base = `${marketRoot}/skins/${id}`;
     const [theme, meta] = await Promise.all([
@@ -124,6 +132,7 @@ async function marketSkins() {
       version: meta.version,
       preview: `${base}/preview.png`,
       installed: installed.has(id),
+      removable: installed.has(id) && !bundled.has(id),
     };
   }));
 }
@@ -154,6 +163,20 @@ async function installMarketSkin(id) {
   }
 }
 
+async function removeMarketSkin(id) {
+  if (!themePattern.test(id)) throw new Error("非法皮肤 ID");
+  if ((await bundledThemes()).has(id)) throw new Error("内置皮肤不能删除");
+  const destination = path.join(themesRoot, id);
+  if (!await fs.stat(destination).catch(() => null)) return { id, removed: true };
+  const preferred = await fs.readFile(preferenceFile, "utf8")
+    .then((value) => JSON.parse(value).preset)
+    .catch(() => "native");
+  const ready = await cdpReady();
+  if (preferred === id || await liveSkin(ready) === id) await setSkin("native");
+  await fs.rm(destination, { recursive: true, force: true });
+  return { id, removed: true };
+}
+
 function sendJson(response, status, value) {
   response.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
@@ -168,6 +191,7 @@ async function uiAction(action, id = "") {
     await installMarketSkin(id);
     return setSkin(id);
   }
+  if (action === "remove") return removeMarketSkin(id);
   throw new Error("未知市场操作");
 }
 
@@ -246,6 +270,8 @@ function startUiApi() {
       if (selectMatch) return sendJson(response, 200, await uiAction("select", selectMatch[1]));
       const installMatch = request.method === "POST" && url.pathname.match(/^\/install\/([a-z0-9-]+)$/);
       if (installMatch) return sendJson(response, 200, await uiAction("install", installMatch[1]));
+      const removeMatch = request.method === "POST" && url.pathname.match(/^\/remove\/([a-z0-9-]+)$/);
+      if (removeMatch) return sendJson(response, 200, await uiAction("remove", removeMatch[1]));
       return sendJson(response, 404, { error: "Not found" });
     } catch (error) {
       return sendJson(response, 500, { error: error.message });
@@ -419,4 +445,4 @@ if (process.argv[1] && path.resolve(process.argv[1]) === sourceFile) {
   stopUi();
 }
 
-export { installMarketSkin, marketSkins, prepare };
+export { installMarketSkin, marketSkins, prepare, removeMarketSkin };

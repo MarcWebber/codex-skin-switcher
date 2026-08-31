@@ -245,6 +245,22 @@ html[data-codex-skin] [data-radix-popper-content-wrapper] > * {
   backdrop-filter: blur(20px);
 }
 
+html[data-codex-skin]:has([data-app-action-sidebar-scroll]):has(nav + div button[aria-haspopup="menu"][aria-expanded="true"] > img) [data-radix-popper-content-wrapper] > [role="menu"][data-side="top"] {
+  background-color: var(--skin-control) !important;
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--skin-control) 80%, transparent), color-mix(in srgb, var(--skin-surface) 86%, transparent)), var(--skin-profile-art) !important;
+  background-position: center, right bottom !important;
+  background-size: cover, cover !important;
+  background-repeat: no-repeat !important;
+}
+
+html[data-codex-skin]:has([data-app-action-sidebar-scroll]):has(nav + div button[aria-haspopup="menu"][aria-expanded="true"] > svg) [data-radix-popper-content-wrapper] > [role="menu"][data-side="top"] {
+  background-color: var(--skin-control) !important;
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--skin-control) 80%, transparent), color-mix(in srgb, var(--skin-surface) 86%, transparent)), var(--skin-help-art) !important;
+  background-position: center, right bottom !important;
+  background-size: cover, cover !important;
+  background-repeat: no-repeat !important;
+}
+
 html[data-codex-skin] .codex-dialog-overlay {
   background: color-mix(in srgb, var(--skin-canvas) 18%, transparent) !important;
 }

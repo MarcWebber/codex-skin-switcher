@@ -9,6 +9,17 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const serverFile = path.join(root, "plugins", "codex-skin-switcher", "server.mjs");
 const runtimeFile = path.join(root, "plugins", "codex-skin-switcher", "runtime", "skin.mjs");
+const baseCssFile = path.join(root, "plugins", "codex-skin-switcher", "runtime", "base.css");
+const laylaCssFile = path.join(root, "plugins", "codex-skin-switcher", "runtime", "themes", "layla-starlight", "extra.css");
+
+test("profile and help art use sidebar structure instead of localized labels", async () => {
+  const css = `${await fs.readFile(baseCssFile, "utf8")}\n${await fs.readFile(laylaCssFile, "utf8")}`;
+  assert.match(css, /:has\(\[data-app-action-sidebar-scroll\]\):has\(nav \+ div/);
+  assert.match(css, /aria-expanded="true"\] > img/);
+  assert.match(css, /aria-expanded="true"\] > svg/);
+  assert.doesNotMatch(css, /:has\([^)]*:has\(/);
+  assert.doesNotMatch(css, /打开个人资料菜单|打开帮助菜单|Open profile menu|Open help menu/);
+});
 
 test("market UI uses the native CDP binding instead of renderer fetch", async () => {
   const [server, runtime] = await Promise.all([
@@ -21,6 +32,8 @@ test("market UI uses the native CDP binding instead of renderer fetch", async ()
   assert.match(runtime, /event\.source !== window/);
   assert.match(runtime, /requestMarket\("market"\)/);
   assert.match(runtime, /const select = \(nextId\) => requestMarket\("select", nextId\)/);
+  assert.match(runtime, /item\.removable \? "删除"/);
+  assert.match(runtime, /requestMarket\(action, item\.id\)/);
   assert.doesNotMatch(runtime, /const response = await fetch\(marketUrl \+ "\/market/);
 });
 
@@ -74,7 +87,7 @@ test("market API expands the minimal manifest with theme metadata", async () => 
   process.env.CODEX_SKIN_MARKET_URL = "https://market.test";
 
   try {
-    const { installMarketSkin, marketSkins, prepare } = await import(`${serverFile}?test=${Date.now()}`);
+    const { installMarketSkin, marketSkins, prepare, removeMarketSkin } = await import(`${serverFile}?test=${Date.now()}`);
     await prepare();
     assert.deepEqual(await marketSkins(), [{
         id: "remote-skin",
@@ -84,9 +97,14 @@ test("market API expands the minimal manifest with theme metadata", async () => 
         version: "1.2.3",
         preview: "https://market.test/skins/remote-skin/preview.png",
         installed: false,
+        removable: false,
     }]);
     assert.deepEqual(await installMarketSkin("remote-skin"), { id: "remote-skin", installed: true });
     assert.equal(await fs.readFile(path.join(state, "themes", "remote-skin", "meta.json"), "utf8"), JSON.stringify(files["/skins/remote-skin/meta.json"]));
+    assert.equal((await marketSkins())[0].removable, true);
+    assert.deepEqual(await removeMarketSkin("remote-skin"), { id: "remote-skin", removed: true });
+    assert.equal(await fs.stat(path.join(state, "themes", "remote-skin")).catch(() => null), null);
+    await assert.rejects(removeMarketSkin("layla-starlight"), /内置皮肤不能删除/);
   } finally {
     globalThis.fetch = originalFetch;
     delete process.env.CODEX_SKIN_STATE_ROOT;
