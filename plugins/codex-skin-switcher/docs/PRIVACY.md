@@ -10,13 +10,13 @@ Codex Skin Switcher 是本地 macOS 插件。
 ~/Library/Application Support/CodexSkinSwitcher/
 ```
 
-启用非原生主题时，插件还会创建本机 LaunchAgent 文件：
+插件启动时还会创建本机 LaunchAgent 文件，让顶部皮肤入口在后续启动中保持可用：
 
 ```text
 ~/Library/LaunchAgents/com.codex-skin-switcher.plist
 ```
 
-选择原生主题或主题恢复失败时会删除该文件。
+选择原生主题不会删除该文件。主题恢复失败时 Watcher 会自行停用；也可以按 Troubleshooting 中的恢复步骤手动停用。
 
 这些文件不会由插件上传。插件不读取或发送 Codex 对话、登录态、项目文件与账号信息，也不包含分析统计、遥测或广告代码。
 

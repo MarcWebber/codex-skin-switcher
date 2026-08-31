@@ -28,7 +28,6 @@ disable_after_failure() {
 
 while :; do
   THEME="$(theme)"
-  [ "$THEME" = "native" ] && exit 0
 
   if "$NODE_BIN" "$ENGINE" probe --root "$STATE_ROOT" --port "$PORT" >/dev/null 2>&1; then
     "$NODE_BIN" "$ENGINE" apply --root "$STATE_ROOT" --port "$PORT" --market-port "$MARKET_PORT" --theme "$THEME" --creator-skill-path "$CREATOR_SKILL_PATH" >/dev/null 2>&1 || disable_after_failure

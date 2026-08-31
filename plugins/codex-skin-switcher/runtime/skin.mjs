@@ -73,10 +73,10 @@ async function loadTheme(id, customFolder = null) {
   const extra = await fs.readFile(path.join(folder, "extra.css"), "utf8");
   validateExtraCss(extra, id);
   const artFile = path.join(folder, "art.png");
-  const art = await fs.readFile(artFile);
+  const art = await fs.stat(artFile);
   const optionalArt = new Map(await Promise.all(optionalArtFiles.map(async (file) => [
     file,
-    await fs.readFile(path.join(folder, file)).catch(() => null),
+    await fs.stat(path.join(folder, file)).catch(() => null),
   ])));
   const base = await fs.readFile(path.join(stateRoot, "runtime", "base.css"), "utf8");
   const vars = Object.entries(data.vars).map(([key, value]) => `${key}:${value}`).join(";");
@@ -89,8 +89,8 @@ async function loadTheme(id, customFolder = null) {
   const homeCardCUrl = optionalUrl("home-card-c.png", homeCardBUrl);
   const homeCardDUrl = optionalUrl("home-card-d.png", homeCardCUrl);
   const css = `${base}\nhtml[data-codex-skin="${id}"]{${vars};--skin-art:url("${artUrl}");--skin-profile-art:url("${profileArtUrl}");--skin-help-art:url("${helpArtUrl}");--skin-home-card-art-a:url("${homeCardAUrl}");--skin-home-card-art-b:url("${homeCardBUrl}");--skin-home-card-art-c:url("${homeCardCUrl}");--skin-home-card-art-d:url("${homeCardDUrl}")}\n${extra}`;
-  const hash = crypto.createHash("sha256").update(css).update(art);
-  for (const data of optionalArt.values()) if (data) hash.update(data);
+  const hash = crypto.createHash("sha256").update(css).update(`${art.size}:${art.mtimeMs}`);
+  for (const data of optionalArt.values()) if (data) hash.update(`${data.size}:${data.mtimeMs}`);
   const fingerprint = hash.digest("hex");
   return { id, label: data.label || id, css, fingerprint };
 }
@@ -140,8 +140,11 @@ async function evaluate(expression) {
 }
 
 async function apply(id) {
-  const bundled = await Promise.all((await listThemes()).map((theme) => loadTheme(theme.id)));
-  if (id !== "native" && !bundled.some((theme) => theme.id === id)) throw new Error(`未知皮肤：${id}`);
+  const listed = await listThemes();
+  const selected = listed.find((theme) => theme.id === id);
+  if (id !== "native" && !selected) throw new Error(`未知皮肤：${id}`);
+  const active = selected ? await loadTheme(id) : null;
+  const bundled = listed.map((theme) => theme.id === id ? active : { id: theme.id, label: theme.label });
   const creatorSkill = {
     name: "codex-skin-switcher:skin-creator",
     displayName: "skin-creator",
@@ -151,7 +154,8 @@ async function apply(id) {
   };
   const runtimeFingerprint = crypto.createHash("sha256").update(await fs.readFile(new URL(import.meta.url))).digest("hex");
   const bundleFingerprint = crypto.createHash("sha256").update(JSON.stringify({
-    themes: bundled.map((theme) => theme.fingerprint),
+    themes: bundled.map((theme) => [theme.id, theme.label]),
+    active: active?.fingerprint || "native",
     runtimeFingerprint,
     creatorSkillPath,
     marketPort,
@@ -265,6 +269,7 @@ async function apply(id) {
     let bridgeRequestId = 0;
     const requestMarket = (action, id = "") => new Promise((resolve, reject) => {
       const requestId = ++bridgeRequestId;
+      let timer;
       const finish = (callback, value) => {
         clearTimeout(timer);
         window.removeEventListener("message", receive);
@@ -272,11 +277,17 @@ async function apply(id) {
       };
       const receive = (event) => {
         if (event.source !== window) return;
-        if (event.data?.type !== "codex-skin-response" || event.data.requestId !== requestId) return;
+        if (event.data?.requestId !== requestId) return;
+        if (event.data.type === "codex-skin-accepted") {
+          clearTimeout(timer);
+          timer = setTimeout(() => finish(reject, new Error("皮肤操作超时")), 30000);
+          return;
+        }
+        if (event.data.type !== "codex-skin-response") return;
         if (!event.data.ok) finish(reject, new Error(event.data.error || "市场请求失败"));
         else finish(resolve, event.data);
       };
-      const timer = setTimeout(() => finish(reject, new Error("市场连接失败")), 10000);
+      timer = setTimeout(() => finish(reject, new Error("皮肤服务未就绪")), 1500);
       window.addEventListener("message", receive);
       if (typeof window[bridgeName] !== "function") return finish(reject, new Error("市场连接未就绪"));
       window[bridgeName](JSON.stringify({ requestId, action, id }));
@@ -312,14 +323,14 @@ async function apply(id) {
         position: "fixed",
         inset: "0",
         zIndex: "2147483647",
-        pointerEvents: "all",
+        pointerEvents: "none",
         background: getComputedStyle(document.documentElement).getPropertyValue("--skin-canvas").trim() || "#f7f8fc",
         opacity: "0",
         transition: "opacity 180ms ease",
       });
       document.body.appendChild(veil);
       await new Promise((resolve) => requestAnimationFrame(resolve));
-      veil.style.opacity = ".94";
+      veil.style.opacity = ".38";
       await wait(150);
       try {
         return await select(nextId);
@@ -406,6 +417,7 @@ async function apply(id) {
         button.innerHTML = "<span></span><span class=mark>✓</span>";
         button.firstElementChild.textContent = item.label;
         button.onclick = async () => {
+          if (item.id === window[key]?.id) return activate(item.id);
           title.textContent = "切换中…";
           try {
             await transitionTo(item.id);
@@ -530,7 +542,8 @@ async function apply(id) {
     shadow.getElementById("market").onclick = () => {
       showMarket();
       query.value = "";
-      loadMarket();
+      if (marketItems.length) renderMarket();
+      else loadMarket();
     };
     shadow.getElementById("back").onclick = () => {
       showLocal();

@@ -27,6 +27,7 @@ const creatorSkillPath = path.join(root, "skills", "skin-creator", "SKILL.md");
 const themePattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const marketRequired = ["meta.json", "theme.json", "extra.css", "art.png", "preview.png"];
 const marketOptional = ["profile-art.png", "help-art.png", "home-card-a.png", "home-card-b.png", "home-card-c.png", "home-card-d.png"];
+let marketCatalogPromise = null;
 
 function assertMacOS() {
   if (process.platform !== "darwin") throw new Error("Codex Skin Switcher 当前仅支持 macOS。");
@@ -111,34 +112,47 @@ async function download(file, optional = false) {
   return Buffer.from(await response.arrayBuffer());
 }
 
+async function marketCatalog() {
+  if (!marketCatalogPromise) marketCatalogPromise = (async () => {
+    const manifest = JSON.parse((await download(`${marketRoot}/manifest.json?${Date.now()}`)).toString("utf8"));
+    if (!Array.isArray(manifest) || !manifest.every((id) => typeof id === "string" && themePattern.test(id))) {
+      throw new Error("市场 Manifest 格式错误");
+    }
+    return Promise.all(manifest.map(async (id) => {
+      const base = `${marketRoot}/skins/${id}`;
+      const [theme, meta] = await Promise.all([
+        download(`${base}/theme.json`).then((value) => JSON.parse(value.toString("utf8"))),
+        download(`${base}/meta.json`).then((value) => JSON.parse(value.toString("utf8"))),
+      ]);
+      if (typeof theme.label !== "string" || typeof theme.description !== "string" || typeof meta.version !== "string") {
+        throw new Error(`${id} 元信息不完整`);
+      }
+      return {
+        id,
+        label: theme.label,
+        description: theme.description,
+        author: typeof meta.author === "string" ? meta.author : "",
+        version: meta.version,
+        preview: `${base}/preview.png`,
+      };
+    }));
+  })().catch((error) => {
+    marketCatalogPromise = null;
+    throw error;
+  });
+  return marketCatalogPromise;
+}
+
 async function marketSkins() {
-  const manifest = JSON.parse((await download(`${marketRoot}/manifest.json?${Date.now()}`)).toString("utf8"));
-  if (!Array.isArray(manifest) || !manifest.every((id) => typeof id === "string" && themePattern.test(id))) {
-    throw new Error("市场 Manifest 格式错误");
-  }
-  const [installed, bundled] = await Promise.all([
+  const [catalog, installed, bundled] = await Promise.all([
+    marketCatalog(),
     themes().then((items) => new Set(items.map((theme) => theme.id))),
     bundledThemes(),
   ]);
-  return Promise.all(manifest.map(async (id) => {
-    const base = `${marketRoot}/skins/${id}`;
-    const [theme, meta] = await Promise.all([
-      download(`${base}/theme.json`).then((value) => JSON.parse(value.toString("utf8"))),
-      download(`${base}/meta.json`).then((value) => JSON.parse(value.toString("utf8"))),
-    ]);
-    if (typeof theme.label !== "string" || typeof theme.description !== "string" || typeof meta.version !== "string") {
-      throw new Error(`${id} 元信息不完整`);
-    }
-    return {
-      id,
-      label: theme.label,
-      description: theme.description,
-      author: typeof meta.author === "string" ? meta.author : "",
-      version: meta.version,
-      preview: `${base}/preview.png`,
-      installed: installed.has(id),
-      removable: installed.has(id) && !bundled.has(id),
-    };
+  return catalog.map((skin) => ({
+    ...skin,
+    installed: installed.has(skin.id),
+    removable: installed.has(skin.id) && !bundled.has(skin.id),
   }));
 }
 
@@ -207,7 +221,7 @@ function startUiBridge() {
     timer = setTimeout(() => {
       timer = null;
       void connect();
-    }, 3000);
+    }, 1000);
     timer.unref();
   };
   const connect = async () => {
@@ -239,6 +253,7 @@ function startUiBridge() {
           let response;
           try {
             request = JSON.parse(message.params.payload);
+            send("Runtime.evaluate", { expression: `window.postMessage(${JSON.stringify({ type: "codex-skin-accepted", requestId: request.requestId })}, "*")` });
             response = { type: "codex-skin-response", requestId: request.requestId, ok: true, ...await uiAction(request.action, request.id) };
           } catch (error) {
             response = { type: "codex-skin-response", requestId: request.requestId, ok: false, error: error.message };
@@ -312,11 +327,16 @@ async function ensureWatcher(app) {
 <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
 <key>ProcessType</key><string>Background</string>
 </dict></plist>\n`;
-  if (await fs.readFile(plistFile, "utf8").catch(() => null) === plist) return;
-  await fs.writeFile(plistFile, plist);
   const domain = `gui/${process.getuid()}`;
-  await run("/bin/launchctl", ["bootout", `${domain}/${watcherLabel}`], 5000);
-  const started = await run("/bin/launchctl", ["bootstrap", domain, plistFile], 5000);
+  const target = `${domain}/${watcherLabel}`;
+  const loaded = (await run("/bin/launchctl", ["print", target], 5000)).ok;
+  if (await fs.readFile(plistFile, "utf8").catch(() => null) !== plist || !loaded) {
+    if (loaded) await run("/bin/launchctl", ["bootout", target], 5000);
+    await fs.writeFile(plistFile, plist);
+    const registered = await run("/bin/launchctl", ["bootstrap", domain, plistFile], 5000);
+    if (!registered.ok) throw new Error(`Watcher 注册失败：${registered.error}`);
+  }
+  const started = await run("/bin/launchctl", ["kickstart", target], 5000);
   if (!started.ok) throw new Error(`Watcher 启动失败：${started.error}`);
 }
 
@@ -345,17 +365,9 @@ async function status(message = null) {
 }
 
 async function setSkin(preset) {
-  if (preset === "native") {
-    await writeJson(preferenceFile, { preset });
-    if (await cdpReady()) {
-      const applied = await callRuntime("apply", ["--theme", preset, "--creator-skill-path", creatorSkillPath], 12000);
-      if (!applied.ok) throw new Error(applied.error);
-    }
-    await disableWatcher();
-    return status("已恢复 Codex 原生界面，Watcher 已关闭。");
-  }
-
-  const selected = (await themes()).find((item) => item.id === preset);
+  const selected = preset === "native"
+    ? { id: "native", label: "Codex 原生界面" }
+    : (await themes()).find((item) => item.id === preset);
   if (!selected) throw new Error(`未知皮肤：${preset}`);
   await writeJson(preferenceFile, { preset });
 
@@ -364,7 +376,7 @@ async function setSkin(preset) {
   await ensureWatcher(app);
 
   if (!await cdpReady()) {
-    return status(`已保存 ${selected.label}；正常退出 Codex 后，Watcher 会带本机调试参数重开一次并恢复主题。`);
+    return status(`已保存 ${selected.label}；正常退出 Codex 后，Watcher 会带本机调试参数重开并保持皮肤入口。`);
   }
 
   const applied = await callRuntime("apply", ["--theme", preset, "--creator-skill-path", creatorSkillPath], 12000);
@@ -372,7 +384,7 @@ async function setSkin(preset) {
     await disableWatcher();
     throw new Error(`皮肤注入失败，Watcher 已关闭；下次请正常打开 Codex：${applied.error}`);
   }
-  return status(`已切换到 ${selected.label}。`);
+  return status(preset === "native" ? "已恢复 Codex 原生界面，皮肤入口保持可用。" : `已切换到 ${selected.label}。`);
 }
 
 const statusSchema = {
@@ -430,6 +442,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === sourceFile) {
   let stopUi = () => {};
   if (process.platform === "darwin") {
     await prepare();
+    if (!process.env.CODEX_SKIN_STATE_ROOT) {
+      const app = await findCodexApp();
+      if (app) await ensureWatcher(app);
+    }
     stopUi = startUiApi();
   }
   const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
