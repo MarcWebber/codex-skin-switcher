@@ -160,7 +160,7 @@ async function apply(id) {
     const requested = ${JSON.stringify(id)};
     const themes = ${JSON.stringify(bundled)};
     const creatorSkill = ${JSON.stringify(creatorSkill)};
-    const marketUrl = ${JSON.stringify(`http://127.0.0.1:${marketPort}`)};
+    const bridgeName = "__codexSkinRequest";
     const bundleFingerprint = ${JSON.stringify(bundleFingerprint)};
     const key = "__CODEX_SKIN__";
     const styleId = "codex-skin-style";
@@ -238,6 +238,25 @@ async function apply(id) {
     const marketList = shadow.getElementById("marketList");
     const marketStatus = shadow.getElementById("marketStatus");
     const query = shadow.getElementById("query");
+    let bridgeRequestId = 0;
+    const requestMarket = (action, id = "") => new Promise((resolve, reject) => {
+      const requestId = ++bridgeRequestId;
+      const finish = (callback, value) => {
+        clearTimeout(timer);
+        window.removeEventListener("message", receive);
+        callback(value);
+      };
+      const receive = (event) => {
+        if (event.source !== window) return;
+        if (event.data?.type !== "codex-skin-response" || event.data.requestId !== requestId) return;
+        if (!event.data.ok) finish(reject, new Error(event.data.error || "市场请求失败"));
+        else finish(resolve, event.data);
+      };
+      const timer = setTimeout(() => finish(reject, new Error("市场连接失败")), 10000);
+      window.addEventListener("message", receive);
+      if (typeof window[bridgeName] !== "function") return finish(reject, new Error("市场连接未就绪"));
+      window[bridgeName](JSON.stringify({ requestId, action, id }));
+    });
     const options = [{ id: "native", label: "原生" }, ...themes];
     let marketItems = [];
     const activate = (nextId) => {
@@ -255,11 +274,7 @@ async function apply(id) {
       for (const button of list.querySelectorAll("button")) button.setAttribute("aria-pressed", String(button.dataset.id === (next?.id || "native")));
       panel.hidden = true;
     };
-    const select = async (nextId) => {
-      const response = await fetch(marketUrl + "/select/" + encodeURIComponent(nextId), { method: "POST" });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || "切换失败");
-    };
+    const select = (nextId) => requestMarket("select", nextId);
     for (const option of options) {
       const button = document.createElement("button");
       button.type = "button";
@@ -325,9 +340,7 @@ async function apply(id) {
           install.disabled = true;
           install.textContent = "下载中";
           try {
-            const response = await fetch(marketUrl + "/install/" + encodeURIComponent(item.id), { method: "POST" });
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(result.error || "下载失败");
+            await requestMarket("install", item.id);
             item.installed = true;
             renderMarket();
           } catch (error) {
@@ -348,9 +361,8 @@ async function apply(id) {
       marketStatus.hidden = false;
       marketStatus.textContent = "正在加载…";
       try {
-        const response = await fetch(marketUrl + "/market?" + Date.now(), { cache: "no-store" });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || !Array.isArray(result.skins)) throw new Error(result.error || "市场加载失败");
+        const result = await requestMarket("market");
+        if (!Array.isArray(result.skins)) throw new Error("市场加载失败");
         marketItems = result.skins;
         renderMarket();
       } catch (error) {

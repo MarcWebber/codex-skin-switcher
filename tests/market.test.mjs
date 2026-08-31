@@ -7,6 +7,21 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const serverFile = path.join(root, "plugins", "codex-skin-switcher", "server.mjs");
+const runtimeFile = path.join(root, "plugins", "codex-skin-switcher", "runtime", "skin.mjs");
+
+test("market UI uses the native CDP binding instead of renderer fetch", async () => {
+  const [server, runtime] = await Promise.all([
+    fs.readFile(serverFile, "utf8"),
+    fs.readFile(runtimeFile, "utf8"),
+  ]);
+  assert.match(server, /Runtime\.addBinding/);
+  assert.match(server, /server\.once\("listening", startUiBridge\)/);
+  assert.match(runtime, /window\[bridgeName\]\(JSON\.stringify/);
+  assert.match(runtime, /event\.source !== window/);
+  assert.match(runtime, /requestMarket\("market"\)/);
+  assert.match(runtime, /const select = \(nextId\) => requestMarket\("select", nextId\)/);
+  assert.doesNotMatch(runtime, /const response = await fetch\(marketUrl \+ "\/market/);
+});
 
 test("market API expands the minimal manifest with theme metadata", async () => {
   const state = await fs.mkdtemp(path.join(os.tmpdir(), "codex-skin-market-test-"));

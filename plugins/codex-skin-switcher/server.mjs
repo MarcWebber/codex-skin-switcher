@@ -21,6 +21,7 @@ const watcherLabel = "com.codex-skin-switcher";
 const port = 9335;
 const marketPort = Number(process.env.CODEX_SKIN_MARKET_PORT || 9336);
 const marketRoot = (process.env.CODEX_SKIN_MARKET_URL || "https://raw.githubusercontent.com/MarcWebber/codex-skins/main").replace(/\/$/, "");
+const uiBinding = "__codexSkinRequest";
 const node = process.execPath;
 const creatorSkillPath = path.join(root, "skills", "skin-creator", "SKILL.md");
 const themePattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
@@ -155,29 +156,69 @@ async function installMarketSkin(id) {
 
 function sendJson(response, status, value) {
   response.writeHead(status, {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json; charset=utf-8",
   });
   response.end(JSON.stringify(value));
 }
 
+async function uiAction(action, id = "") {
+  if (action === "market") return { skins: await marketSkins() };
+  if (action === "select") return setSkin(id);
+  if (action === "install") {
+    await installMarketSkin(id);
+    return setSkin(id);
+  }
+  throw new Error("未知市场操作");
+}
+
+function startUiBridge() {
+  const retry = () => setTimeout(connect, 3000).unref();
+  const connect = async () => {
+    try {
+      const items = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(1000) }).then((response) => response.json());
+      const target = items.find((item) => item.type === "page" && item.url === "app://-/index.html");
+      if (!target) return retry();
+      const socket = new WebSocket(target.webSocketDebuggerUrl);
+      await new Promise((resolve, reject) => {
+        socket.addEventListener("open", resolve, { once: true });
+        socket.addEventListener("error", reject, { once: true });
+      });
+      let requestId = 0;
+      const send = (method, params = {}) => socket.send(JSON.stringify({ id: ++requestId, method, params }));
+      socket.addEventListener("close", retry, { once: true });
+      socket.addEventListener("message", (event) => {
+        const message = JSON.parse(String(event.data));
+        if (message.method !== "Runtime.bindingCalled" || message.params.name !== uiBinding) return;
+        void (async () => {
+          let request = {};
+          let response;
+          try {
+            request = JSON.parse(message.params.payload);
+            response = { type: "codex-skin-response", requestId: request.requestId, ok: true, ...await uiAction(request.action, request.id) };
+          } catch (error) {
+            response = { type: "codex-skin-response", requestId: request.requestId, ok: false, error: error.message };
+          }
+          send("Runtime.evaluate", { expression: `window.postMessage(${JSON.stringify(response)}, "*")` });
+        })();
+      });
+      send("Runtime.enable");
+      send("Runtime.addBinding", { name: uiBinding });
+    } catch { retry(); }
+  };
+  void connect();
+}
+
 function startUiApi() {
   const server = http.createServer(async (request, response) => {
-    if (request.method === "OPTIONS") return sendJson(response, 204, {});
     try {
       const url = new URL(request.url, `http://127.0.0.1:${marketPort}`);
       if (request.method === "GET" && url.pathname === "/market") {
-        return sendJson(response, 200, { skins: await marketSkins() });
+        return sendJson(response, 200, await uiAction("market"));
       }
       const selectMatch = request.method === "POST" && url.pathname.match(/^\/select\/([a-z0-9-]+)$/);
-      if (selectMatch) return sendJson(response, 200, await setSkin(selectMatch[1]));
+      if (selectMatch) return sendJson(response, 200, await uiAction("select", selectMatch[1]));
       const installMatch = request.method === "POST" && url.pathname.match(/^\/install\/([a-z0-9-]+)$/);
-      if (installMatch) {
-        await installMarketSkin(installMatch[1]);
-        return sendJson(response, 200, await setSkin(installMatch[1]));
-      }
+      if (installMatch) return sendJson(response, 200, await uiAction("install", installMatch[1]));
       return sendJson(response, 404, { error: "Not found" });
     } catch (error) {
       return sendJson(response, 500, { error: error.message });
@@ -186,6 +227,7 @@ function startUiApi() {
   server.on("error", (error) => {
     if (error.code !== "EADDRINUSE") process.stderr.write(`皮肤市场启动失败：${error.message}\n`);
   });
+  server.once("listening", startUiBridge);
   server.listen(marketPort, "127.0.0.1");
 }
 
