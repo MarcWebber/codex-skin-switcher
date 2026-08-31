@@ -36,6 +36,7 @@
 | --- | --- |
 | 系统 | macOS only |
 | Node.js | `22+`，`node` 需要在 Codex 可用的 PATH 中 |
+| 市场投稿 | 已登录的 GitHub CLI `gh`；仅投稿时需要 |
 
 插件只维护当前 macOS Codex 页面结构，不包含旧版、未来版本或其他平台的兼容分支。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md) 更新共享宿主映射。
 
@@ -128,15 +129,29 @@ home-card-d.png
 
 ## 投稿皮肤
 
-`skin-creator` 当前只创建和调试本地主题，不会自动提交 GitHub Pull Request。要把主题加入公共市场：
+在 Codex 对话中直接说：
+
+```text
+把 <theme-id> 投稿到皮肤市场
+```
+
+`skin-creator` 会说明主题文件和图片将公开，并在得到明确投稿请求后调用本地发布脚本。脚本依次校验主题、克隆 [`MarcWebber/codex-skins`](https://github.com/MarcWebber/codex-skins)、按需创建 fork、准备市场元信息与预览图、运行市场构建和测试、推送功能分支并发起 Pull Request。它不会直接写入或合并 `main`。
+
+首次使用前确认 GitHub CLI 已登录：
+
+```bash
+gh auth status
+```
+
+新主题默认从 `1.0.0` 开始；更新已有主题时自动递增 patch 版本。主题目录已有 `preview.png` 时优先使用，否则以 `art.png` 作为市场预览。也可以在投稿请求中指定版本、作者或单独的预览图。
+
+如果不使用自动投稿，也可以手动完成相同流程：
 
 1. Fork 或克隆 [`MarcWebber/codex-skins`](https://github.com/MarcWebber/codex-skins)，并创建功能分支。
 2. 将本地主题复制到 `skins/<theme-id>/`，补充固定文件 `meta.json` 和 `preview.png`。
 3. 在市场仓库运行 `npm run build`，由目录名自动生成 `manifest.json`；不要手工维护路径或文件清单。
 4. 运行 `npm test`，确认目录、必需文件和 Manifest 一致。
 5. 推送功能分支并向 `MarcWebber/codex-skins:main` 发起 Pull Request。
-
-如果后续增加“一键投稿”，它应作为本地 Skill 调用 `gh` 完成分支、提交、推送和 PR，并在外部写入前让用户确认；皮肤面板本身不应持有 GitHub Token，也不应直接写入市场仓库。
 
 ## 推广边界
 
