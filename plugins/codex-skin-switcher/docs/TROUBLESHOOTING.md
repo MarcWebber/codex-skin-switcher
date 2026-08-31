@@ -1,58 +1,24 @@
 # Troubleshooting
 
-本文记录真实遇到过的问题。当前版本只有一个负责启动参数与主题恢复的最小 Watcher，没有 FPS 侦测或安装位置扫描。
-
-## 先恢复原生界面
-
-优先在顶部皮肤菜单选择“原生”，或在对话中输入：
+这里只保留当前版本仍可能遇到的问题。正常情况下，顶部菜单选择“原生”即可撤销主题；入口不可用时，可以在 Codex 中发送：
 
 ```text
 恢复 Codex 原生界面
 ```
 
-如果插件入口不可用，可以先在终端停用 Watcher，并把相关文件改名留作备份：
+## 首次切换没有变化
 
-```bash
-launchctl bootout "gui/$(id -u)/com.codex-skin-switcher" 2>/dev/null || true
-mv "$HOME/Library/LaunchAgents/com.codex-skin-switcher.plist" \
-  "$HOME/Library/LaunchAgents/com.codex-skin-switcher.plist.disabled" 2>/dev/null || true
-mv "$HOME/Library/Application Support/CodexSkinSwitcher/preference.json" \
-  "$HOME/Library/Application Support/CodexSkinSwitcher/preference.json.disabled" 2>/dev/null || true
-```
+当前 Codex 如果没有开启本机调试端口，第一次选择主题只会保存偏好。正常退出 Codex 一次，Watcher 会带本机 `9335` 参数重新打开并恢复主题，不会强制退出正在使用的窗口。
 
-然后正常退出 Codex，再从 Dock 或 Applications 打开。
+Codex 安装在默认位置以外时，设置 `CODEX_APP_PATH`。升级插件后仍看到旧行为时，新建一个 Codex 任务，让当前版本的 Skill 与本地服务进入会话。
 
-## Watcher 做了什么
+## 皮肤市场加载失败
 
-插件启动后，`com.codex-skin-switcher` 会保持运行并等待当前 Codex 正常退出，再执行：
+市场只在打开时读取 `MarcWebber/codex-skins` 的 `main` 分支。先确认网络可以访问 GitHub，再点击“重试”。加载失败不会修改已经安装的主题，也不会影响本地切换和原生恢复。
 
-```bash
-open -n "/Applications/ChatGPT.app" --args \
-  --remote-debugging-port=9335 \
-  --remote-debugging-address=127.0.0.1
-```
+## 背景没有显示
 
-随后它恢复当前主题，并继续等待下一次正常退出。选择“原生”只会清空主题样式，顶部入口和 Watcher 仍然保留。启动或注入失败时，Watcher 会发送一次 macOS 通知、删除自己的 plist 并正常退出；它不会循环重试或写 `recovery.json`。
-
-Watcher 只识别 `Contents/MacOS/ChatGPT` 主可执行文件。tmux、CLI、小助手或 Codex 自己启动的 Node/Helper 进程即使位于应用包内，也不会阻止 Watcher 在主窗口退出后恢复皮肤。
-
-## 皮肤已选择，但没有变化
-
-先查看状态。如果 `cdpReady` 为 `false`，说明当前 Codex 没有开启本机调试端口。正常退出一次，Watcher 会带参数重开并恢复主题。它不会强制退出正在使用的 Codex。使用自定义安装位置时，设置一个 `CODEX_APP_PATH` 即可；不会再扫描其他目录。
-
-如果 CDP 已开启但主题仍未变化，常见原因是 MCP 使用旧缓存，或本机同名主题目录保留了旧内容。升级插件后新建一个 Codex 任务；未修改过的 demo 主题可以先改名备份，再让插件重新复制预制版本。
-
-## 打开皮肤后固定在 10 FPS
-
-历史问题来自旧版本直接运行应用包内可执行文件，而不是背景图或 CSS 性能。当前 Watcher 只通过 `/usr/bin/open` 启动，不执行 `Contents/MacOS/ChatGPT`。如果问题重现，先恢复原生并确认没有其他旧脚本直接运行应用包内二进制。
-
-## 顶部皮肤按钮不能点击
-
-当前顶部工具使用独立 Shadow DOM 和 `no-drag` 点击区。先在对话中读取状态；若 CDP 未开启，按上文重新启动一次。如果状态正常，重新选择当前主题以重建顶部按钮。仍不可用时先恢复原生，再重新安装当前插件版本。
-
-## 背景图没有显示或仍是旧图
-
-确认主题目录至少包含：
+确认主题目录至少包含三个核心文件：
 
 ```text
 theme.json
@@ -60,39 +26,29 @@ extra.css
 art.png
 ```
 
-角色菜单和主页卡片需要对应的可选图片。同名预制主题不会覆盖用户已有目录；未手工修改时可以先把旧目录改名，再重新加载插件。
-
-## 皮肤市场加载失败
-
-市场只在点击小店铺图标时读取 `MarcWebber/codex-skins` 的 `refs/heads/main`。确认网络可以访问 GitHub，然后点击“重试”。如果 `127.0.0.1:9336/market` 正常但 Codex 控制台提示顶部工具直接请求该地址违反 `connect-src`，说明正在运行旧版注入代码；更新插件并重新应用当前皮肤。插件不会后台重试，也不会因为市场不可用而修改或移除本地主题。
+如果只有菜单、设置页或文件预览等局部区域在 Codex 升级后失效，请附上应用版本、页面截图和复现步骤提交 Issue。这通常需要更新当前页面结构对应的公共样式，不需要修改每套主题。
 
 ## 投稿市场失败
 
-先运行 `gh auth status`，确认 GitHub CLI 已登录且可以访问 `MarcWebber/codex-skins`。投稿脚本只复制固定主题文件，在临时目录中运行主题校验、Manifest 构建、市场测试和 `git diff --check`；错误信息会指出第一个失败命令。本地主题不会被修改。若推送已成功但 PR 创建失败，远端功能分支会保留，可修复登录或权限后手动执行 `gh pr create`，不要重复发布同一版本。
+先运行：
 
-## 背景太深、文字看不清
+```bash
+gh auth status
+```
 
-优先在 `theme.json` 中把 `--skin-art-opacity` 调整到 `.20` 至 `.25`。正文、输入框、菜单和终端表面应保持接近不透明，不要为了展示人物继续降低内容卡片透明度。
-
-## 白色按钮白色字，或界面变成纯黑
-
-恢复原生，确认主题包含全部必填 `--skin-*` 变量，并只在主题作用域内补充按钮样式。不要写无作用域的全局 CSS，也不要混用旧版 `base.css`。
-
-## 终端、文件查看器或设置页没有跟随主题
-
-如果升级 Codex 后只有子页面失配，记录应用版本、页面和截图，然后更新 `runtime/base.css` 的当前宿主选择器；不要把宿主兼容规则散落到每套主题中。
-
-## 四个主页按钮重复或风格过重
-
-角色主题应分别提供 `home-card-a.png` 到 `home-card-d.png`，并使用不同的背景、强调色和道具 SVG，不能使用 A/B/A/B 循环。风格过重时降低强调色饱和度、背景透明度和装饰密度；保留 Codex 原生头像。
+确认 GitHub CLI 已登录并且可以访问 `MarcWebber/codex-skins`。如果主题校验、Manifest 生成或 Pull Request 创建失败，命令会保留第一个错误；已经推送的功能分支也会保留，修复登录或权限后可以继续创建 Pull Request。
 
 ## 完全重新初始化
 
-先恢复原生，再把状态目录改名：
+先恢复原生，再把本地状态目录改名保留：
 
 ```bash
 mv "$HOME/Library/Application Support/CodexSkinSwitcher" \
   "$HOME/Library/Application Support/CodexSkinSwitcher.backup"
 ```
 
-重新加载插件后会创建新的运行时和预制主题。自定义主题可以从备份中逐个复制回来。
+重新加载插件后会创建新的运行时和内置主题。自定义主题可以从备份目录逐个复制回来。
+
+## Watcher
+
+Watcher 只负责在 Codex 正常退出后补充本机启动参数并恢复主题。启动或注入失败时，它会提示一次后停止，让 Codex 继续按原生方式启动；不会监控 FPS，也不会扫描一组安装路径或循环重试。
