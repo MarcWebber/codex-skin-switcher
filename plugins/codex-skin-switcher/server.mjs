@@ -27,6 +27,7 @@ const creatorSkillPath = path.join(root, "skills", "skin-creator", "SKILL.md");
 const themePattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const marketRequired = ["meta.json", "theme.json", "extra.css", "art.png", "preview.png"];
 const marketOptional = ["profile-art.png", "help-art.png", "home-card-a.png", "home-card-b.png", "home-card-c.png", "home-card-d.png"];
+let marketCatalogPromise = null;
 
 function assertMacOS() {
   if (process.platform !== "darwin") throw new Error("Codex Skin Switcher 当前仅支持 macOS。");
@@ -111,34 +112,47 @@ async function download(file, optional = false) {
   return Buffer.from(await response.arrayBuffer());
 }
 
+async function marketCatalog() {
+  if (!marketCatalogPromise) marketCatalogPromise = (async () => {
+    const manifest = JSON.parse((await download(`${marketRoot}/manifest.json?${Date.now()}`)).toString("utf8"));
+    if (!Array.isArray(manifest) || !manifest.every((id) => typeof id === "string" && themePattern.test(id))) {
+      throw new Error("市场 Manifest 格式错误");
+    }
+    return Promise.all(manifest.map(async (id) => {
+      const base = `${marketRoot}/skins/${id}`;
+      const [theme, meta] = await Promise.all([
+        download(`${base}/theme.json`).then((value) => JSON.parse(value.toString("utf8"))),
+        download(`${base}/meta.json`).then((value) => JSON.parse(value.toString("utf8"))),
+      ]);
+      if (typeof theme.label !== "string" || typeof theme.description !== "string" || typeof meta.version !== "string") {
+        throw new Error(`${id} 元信息不完整`);
+      }
+      return {
+        id,
+        label: theme.label,
+        description: theme.description,
+        author: typeof meta.author === "string" ? meta.author : "",
+        version: meta.version,
+        preview: `${base}/preview.png`,
+      };
+    }));
+  })().catch((error) => {
+    marketCatalogPromise = null;
+    throw error;
+  });
+  return marketCatalogPromise;
+}
+
 async function marketSkins() {
-  const manifest = JSON.parse((await download(`${marketRoot}/manifest.json?${Date.now()}`)).toString("utf8"));
-  if (!Array.isArray(manifest) || !manifest.every((id) => typeof id === "string" && themePattern.test(id))) {
-    throw new Error("市场 Manifest 格式错误");
-  }
-  const [installed, bundled] = await Promise.all([
+  const [catalog, installed, bundled] = await Promise.all([
+    marketCatalog(),
     themes().then((items) => new Set(items.map((theme) => theme.id))),
     bundledThemes(),
   ]);
-  return Promise.all(manifest.map(async (id) => {
-    const base = `${marketRoot}/skins/${id}`;
-    const [theme, meta] = await Promise.all([
-      download(`${base}/theme.json`).then((value) => JSON.parse(value.toString("utf8"))),
-      download(`${base}/meta.json`).then((value) => JSON.parse(value.toString("utf8"))),
-    ]);
-    if (typeof theme.label !== "string" || typeof theme.description !== "string" || typeof meta.version !== "string") {
-      throw new Error(`${id} 元信息不完整`);
-    }
-    return {
-      id,
-      label: theme.label,
-      description: theme.description,
-      author: typeof meta.author === "string" ? meta.author : "",
-      version: meta.version,
-      preview: `${base}/preview.png`,
-      installed: installed.has(id),
-      removable: installed.has(id) && !bundled.has(id),
-    };
+  return catalog.map((skin) => ({
+    ...skin,
+    installed: installed.has(skin.id),
+    removable: installed.has(skin.id) && !bundled.has(skin.id),
   }));
 }
 
@@ -207,7 +221,7 @@ function startUiBridge() {
     timer = setTimeout(() => {
       timer = null;
       void connect();
-    }, 3000);
+    }, 1000);
     timer.unref();
   };
   const connect = async () => {
@@ -239,6 +253,7 @@ function startUiBridge() {
           let response;
           try {
             request = JSON.parse(message.params.payload);
+            send("Runtime.evaluate", { expression: `window.postMessage(${JSON.stringify({ type: "codex-skin-accepted", requestId: request.requestId })}, "*")` });
             response = { type: "codex-skin-response", requestId: request.requestId, ok: true, ...await uiAction(request.action, request.id) };
           } catch (error) {
             response = { type: "codex-skin-response", requestId: request.requestId, ok: false, error: error.message };
