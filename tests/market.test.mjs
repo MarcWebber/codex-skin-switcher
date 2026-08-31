@@ -12,6 +12,12 @@ const runtimeFile = path.join(root, "plugins", "codex-skin-switcher", "runtime",
 const baseCssFile = path.join(root, "plugins", "codex-skin-switcher", "runtime", "base.css");
 const laylaCssFile = path.join(root, "plugins", "codex-skin-switcher", "runtime", "themes", "layla-starlight", "extra.css");
 
+test("default market URL uses an explicit GitHub branch ref", async () => {
+  const server = await fs.readFile(serverFile, "utf8");
+  assert.match(server, /codex-skins\/refs\/heads\/main/);
+  assert.doesNotMatch(server, /codex-skins\/main"/);
+});
+
 test("profile and help art use sidebar structure instead of localized labels", async () => {
   const css = `${await fs.readFile(baseCssFile, "utf8")}\n${await fs.readFile(laylaCssFile, "utf8")}`;
   assert.match(css, /:has\(\[data-app-action-sidebar-scroll\]\):has\(nav \+ div/);
