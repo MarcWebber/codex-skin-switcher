@@ -12,35 +12,15 @@
 
 ## 1. 效果展示
 
-<table>
-  <tr>
-    <td width="50%" align="center">
-      <img src="./plugins/codex-skin-switcher/assets/screenshots/switcher-menu.png" alt="本地皮肤切换与删除">
-      <br><sub>本地切换：恢复原生、切换主题、删除本地皮肤</sub>
-    </td>
-    <td width="50%" align="center">
-      <img src="./plugins/codex-skin-switcher/assets/screenshots/skin-market.png" alt="皮肤市场">
-      <br><sub>皮肤市场：搜索、版本、预览、下载与删除</sub>
-    </td>
-  </tr>
-</table>
+![莱依拉星梦主题](./plugins/codex-skin-switcher/assets/screenshots/layla-chat.png)
 
-<table>
-  <tr>
-    <td width="50%" align="center">
-      <img src="./plugins/codex-skin-switcher/assets/screenshots/profile-menu.png" alt="个人菜单主题适配">
-      <br><sub>个人菜单继续复用主体背景</sub>
-    </td>
-    <td width="50%" align="center">
-      <img src="./plugins/codex-skin-switcher/assets/screenshots/help-submenu.png" alt="帮助菜单主题适配">
-      <br><sub>帮助菜单继续复用主体背景</sub>
-    </td>
-  </tr>
-</table>
+<p align="center"><sub>莱依拉星梦：月白、雾蓝与星轨构成的低饱和工作台。</sub></p>
 
-![莱依拉星梦主题主页](./plugins/codex-skin-switcher/assets/screenshots/layla-home.png)
+![暖暖·丹青主题](./plugins/codex-skin-switcher/assets/screenshots/nuannuan-danqing-chat.png)
 
-莱依拉星梦是随插件提供的功能 Demo。主体背景、主页建议卡片、侧栏、输入区、菜单与子页面使用同一套低饱和视觉语言，同时保留 Codex 原生结构与交互。
+<p align="center"><sub>暖暖·丹青：水墨青山、月白与朱砂相映的双人主题。</sub></p>
+
+两套主题都保留 Codex 原生结构，背景会延伸到侧栏、输入区、菜单和子页面。莱依拉星梦随插件提供，其他主题可以从市场下载。
 
 ## 2. Quickstart
 
@@ -65,6 +45,11 @@ codex plugin marketplace add MarcWebber/codex-skin-switcher && codex plugin add 
 ```text
 切换到莱依拉星梦
 ```
+
+<p align="center">
+  <img src="./plugins/codex-skin-switcher/assets/screenshots/switcher-menu.png" width="480" alt="切换皮肤菜单">
+  <br><sub>同一个菜单里可以切换主题、恢复原生或删除本地皮肤。</sub>
+</p>
 
 首次切换时，如果当前 Codex 没有开启本机调试端口，正常退出一次再重新打开。Watcher 只在下一次启动时补充本机 `9335` 参数并恢复主题，不会强制退出正在使用的 Codex。
 
@@ -96,6 +81,11 @@ codex plugin marketplace add MarcWebber/codex-skin-switcher && codex plugin add 
 
 下载完成后不会立即换肤，而是询问“应用”或“稍后”。选择应用时使用短暂淡入淡出过渡。
 
+<p align="center">
+  <img src="./plugins/codex-skin-switcher/assets/screenshots/skin-market.png" width="560" alt="皮肤市场">
+  <br><sub>搜索主题，查看版本，再决定下载、应用或删除。</sub>
+</p>
+
 ### 3.3 删除皮肤
 
 市场下载的主题可以从市场或本地切换列表删除，两处都会先显示确认弹窗。内置 Demo 不提供删除入口；删除当前主题后自动恢复原生界面。
@@ -109,6 +99,20 @@ codex plugin marketplace add MarcWebber/codex-skin-switcher && codex plugin add 
 ```
 
 新增主题目录后，切换面板会自动发现，不需要重新安装插件。
+
+### 3.5 菜单
+
+个人菜单和帮助菜单会继续使用当前主题的背景，不会在打开弹层时突然变回纯色。
+
+<p align="center">
+  <img src="./plugins/codex-skin-switcher/assets/screenshots/profile-menu.png" width="460" alt="个人菜单主题效果">
+  <br><sub>个人菜单</sub>
+</p>
+
+<p align="center">
+  <img src="./plugins/codex-skin-switcher/assets/screenshots/help-submenu.png" width="460" alt="帮助菜单主题效果">
+  <br><sub>帮助菜单</sub>
+</p>
 
 ## 4. 创建皮肤
 
@@ -158,7 +162,7 @@ Skin Creator 会说明主题文件与图片将公开，然后自动创建功能�
 
 ![Codex Skin Switcher 项目架构](./plugins/codex-skin-switcher/assets/architecture.png)
 
-Skin Switcher 是唯一运行入口：它在 Codex UI 与本地主题之间完成加载、切换和原生回退；市场仅在用户打开时读取静态 Manifest；Skin Creator 负责生成本地三个核心文件，也可以把完成的主题通过 Pull Request 投稿到市场。
+平时只需要使用顶部的 Skin Switcher。它从本机读取主题，负责切换、删除和恢复原生界面。Skin Creator 把提示词和参考图做成主题；想分享时，再通过 Pull Request 投稿到 `codex-skins`。皮肤市场只在打开时读取主题列表。
 
 | 模块 | 职责 |
 | --- | --- |
@@ -185,8 +189,6 @@ Skin Switcher 是唯一运行入口：它在 Codex UI 与本地主题之间完�
 | 系统 | macOS only |
 | Node.js | `22+` |
 | 市场投稿 | 已登录的 GitHub CLI `gh`；仅投稿时需要 |
-
-插件只维护当前 macOS Codex 页面结构，不包含旧版本或其他平台的兼容分支。
 
 ## 9. 文档与许可
 
