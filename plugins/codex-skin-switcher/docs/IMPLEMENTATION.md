@@ -9,26 +9,25 @@ runtime/
 ├── skin.mjs
 ├── watch.sh
 └── themes/<id>/{theme.json,extra.css,art.png[,可选子图.png]}
-scripts/
-├── start-codex-with-skin.ps1
-└── start-codex-with-skin.cmd
 ```
 
-`server.mjs` 只提供 `get_skin_status` 和 `set_skin`，负责复制运行时、发现主题、保存偏好并调用 `skin.mjs`。`skin.mjs` 通过本机 CDP 连接 Codex 的 `app://-/index.html`，写入一个主题 `<style>`、`data-codex-skin` 和顶部切换器。`base.css` 集中维护当前 Codex 宿主页面的共享映射。
+`server.mjs` 提供 `get_skin_status`、`set_skin` 和仅绑定 `127.0.0.1:9336` 的界面接口，负责复制运行时、发现主题、保存偏好、下载主题并调用 `skin.mjs`。顶部菜单、Skill 与市场安装都通过 `setSkin` 进入同一条切换链路。`skin.mjs` 通过本机 CDP 连接 Codex 的 `app://-/index.html`，写入一个主题 `<style>`、`data-codex-skin` 和顶部切换器。`base.css` 集中维护当前 Codex 宿主页面的共享映射。
 
 项目没有 FPS 侦测、Spotlight 搜索、bundle id 校验或旧版选择器。应用路径只有两项：默认 `/Applications/ChatGPT.app`，以及可选的 `CODEX_APP_PATH`。
 
 Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。选择非原生主题时，`server.mjs` 注册一个最小 LaunchAgent。`watch.sh` 只按主可执行文件判断 Codex 是否仍在运行，不会把应用包内由 tmux、CLI 或小助手启动的 Node/辅助进程误认为主窗口。它等待用户正常退出 Codex，再通过 `/usr/bin/open` 带上本机 CDP 参数启动，并恢复 `preference.json` 中的主题。它不强制退出进程、不扫描安装位置、不采集性能数据。启动或注入失败时，它发送一次 macOS 通知、删除自己的 plist 并正常退出；后续 Codex 按原生方式启动，不会再次携带 CDP 参数。选择原生主题也会卸载 Watcher。
 
-Windows 不运行常驻 Watcher。`scripts/start-codex-with-skin.ps1` 在 `%LOCALAPPDATA%\CodexSkinSwitcher` 准备运行时，以回环 CDP 参数启动 Codex，等待页面就绪后注入主题并退出。它不创建服务、计划任务或其他后台进程。
-
 ## 主题注入
 
 首次应用时，运行时创建一个 `<style>` 和一个 Shadow DOM 顶部工具。顶部工具显式使用 `no-drag` 点击区，避免 macOS 标题栏截获鼠标。它不使用 MutationObserver、ResizeObserver 或页面轮询。
 
-主题 CSS 预先放进切换菜单；点击主题只替换 `<style>` 内容和根属性。重复应用同一主题时比较 CSS 指纹，相同内容直接返回。菜单里的“原生”清空主题样式但保留切换入口；调用 `set_skin("native")` 才会删除样式、顶部工具和根属性。
+主题 CSS 预先放进切换菜单。点击本地主题、市场安装和调用 `set_skin` 都先更新 `preference.json`，再由同一个 `apply` 入口替换 `<style>` 内容和根属性；不再使用 `localStorage` 保存第二份主题选择。重复应用时比较 CSS 指纹并复用当前顶部工具。选择“原生”会清空主题样式、保留切换入口并卸载 Watcher。
 
 “创建皮肤”只在空输入框中插入 Codex 原生的 `codex-skin-switcher:skin-creator` Skill mention 和可编辑的“风格：”，不会覆盖已有输入，也不会自动发送。
+
+“皮肤市场”与本地列表复用同一个 Shadow DOM 弹层。打开市场时才读取远端 `manifest.json`，然后按固定目录规则读取每套皮肤的 `theme.json`、`meta.json` 和 `preview.png`。Manifest 只包含主题目录 ID，不重复保存路径或文件清单。搜索只过滤已经加载到内存的数据。
+
+下载时 `server.mjs` 只读取固定名称的核心文件和可选插图，先写入临时目录，通过 `skin.mjs validate --folder` 校验后再改名安装。成功后直接应用新主题；失败只删除临时目录并显示错误，不影响现有主题。
 
 ## 三文件主题
 
@@ -48,10 +47,9 @@ art.png      # 本地背景图
 
 ## 文件职责
 
-- `server.mjs`：MCP、主题发现、偏好、Watcher 注册与 CDP 调用。
-- `skin.mjs`：主题校验、CSS 生成、CDP 注入与清理。
+- `server.mjs`：MCP、市场下载、主题发现、偏好、Watcher 注册与 CDP 调用。
+- `skin.mjs`：主题校验、CSS 生成、CDP 注入、单弹层切换器与市场 UI。
 - `watch.sh`：等待下一次正常启动，补充本机 CDP 参数并恢复主题。
-- `scripts/start-codex-with-skin.ps1`：Windows 运行时准备、Codex 定位与一次性注入入口。
 - `base.css`：当前 Codex 版本的按钮、消息、输入区、菜单、终端、文件、Diff 与设置页映射。
 - 主题三个核心文件：用户修改配色、字体、背景和局部风格的集中入口。
 - `skills/skin-creator/SKILL.md`：把提示词和参考图转成主题文件与可选插图。
@@ -60,6 +58,6 @@ art.png      # 本地背景图
 
 ## 校验边界
 
-`skin.mjs validate` 是创建皮肤时的一次性格式检查：读取主题并检查核心文件、必填变量、变量值与 CSS 作用域。它不连接 Codex。项目不包含测试目录、截图工具、FPS 检测或常驻诊断进程；Watcher 只负责启动与主题恢复。
+`skin.mjs validate` 是创建或下载皮肤时的一次性格式检查：读取主题并检查核心文件、必填变量、变量值与 CSS 作用域。它不连接 Codex。项目不包含截图工具、FPS 检测或常驻诊断进程；Watcher 只负责启动与主题恢复。
 
 历史故障和恢复方式见 [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)。

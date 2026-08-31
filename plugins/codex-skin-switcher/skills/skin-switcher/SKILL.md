@@ -12,7 +12,7 @@ This plugin supports macOS only. It targets the current Codex page structure, ca
 - Read status: call `get_skin_status`.
 - Apply a named theme: call `set_skin` with its discovered folder ID.
 - Restore Codex: call `set_skin` with `native`.
-- The floating Skin button inside Codex is the only visual switcher. Its Create skin action inserts the native `codex-skin-switcher:skin-creator` Skill mention followed by an editable `风格：` field in an empty composer; it never sends automatically or overwrites existing input. Its minus control collapses the toolbar to a palette icon; clicking that icon restores it.
+- The floating Skin button inside Codex is the only visual switcher. Its market icon replaces the local list with an on-demand market view in the same panel; the back arrow restores the plain local list. Market search only filters the loaded Manifest, and download validates the fixed theme files before installing and applying them. Its Create skin action inserts the native `codex-skin-switcher:skin-creator` Skill mention followed by an editable `风格：` field in an empty composer; it never sends automatically or overwrites existing input. Its minus control collapses the toolbar to a palette icon; clicking that icon restores it.
 - Report the returned message. When `cdpReady` is false after selecting a non-native theme, ask the user to quit Codex normally once; the minimal Watcher will reopen it with the local CDP parameter. Never restart or kill Codex from the agent turn.
 - If applying or removing a theme fails, report the error and keep the current UI. Troubleshooting lives in `docs/TROUBLESHOOTING.md` under the plugin root.
 

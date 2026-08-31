@@ -3,11 +3,11 @@
 </p>
 
 <p align="center">
-  Codex 本地皮肤切换器：macOS 插件自动化与 Windows 一次性启动器，一键换肤、一键恢复原生。
+  macOS Codex 本地皮肤切换器：一键换肤、一键恢复原生。
 </p>
 
 <p align="center">
-  <strong>macOS plugin</strong> · <strong>Windows launcher</strong> · <strong>Local assets</strong> · <strong>Native rollback</strong>
+  <strong>macOS only</strong> · <strong>Local assets</strong> · <strong>Native rollback</strong>
 </p>
 
 ![莱依拉星梦主题主页](./plugins/codex-skin-switcher/assets/screenshots/layla-home.png)
@@ -16,7 +16,7 @@
   莱依拉星梦示例主题：背景、主页建议卡片、侧栏与输入区使用同一套低饱和视觉语言。
 </p>
 
-![莱依拉主题下的帮助菜单](./assets/screenshots/help-menu.png)
+![莱依拉主题下的帮助菜单](./plugins/codex-skin-switcher/assets/screenshots/help-menu.png)
 
 <p align="center">
   子页面适配：帮助菜单保留原生结构并应用主题插图。
@@ -34,19 +34,18 @@
 
 | 项目 | 支持范围 |
 | --- | --- |
-| 系统 | macOS（插件完整流程）；Windows 11（源码一次性启动器） |
+| 系统 | macOS only |
 | Node.js | `22+`，`node` 需要在 Codex 可用的 PATH 中 |
 
-macOS 插件只维护当前 Codex 页面结构，不包含旧版或未来版本的兼容分支。Windows 启动器复用同一套 CDP 注入运行时与主题映射。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md) 更新共享宿主映射。
+插件只维护当前 macOS Codex 页面结构，不包含旧版、未来版本或其他平台的兼容分支。升级 Codex 后如果局部失效，先恢复原生，再按 [Troubleshooting](./plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md) 更新共享宿主映射。
 
 ## 安装
 
 ```bash
-codex plugin marketplace add MarcWebber/codex-skin-switcher
-codex plugin add codex-skin-switcher@marcwebber
+codex plugin marketplace add MarcWebber/codex-skin-switcher && codex plugin add codex-skin-switcher@marcwebber
 ```
 
-第一条命令注册这个 Git marketplace，第二条命令安装插件。安装或升级后，新建一个 Codex 任务，让新的 Skill 与 MCP 工具进入当前会话。
+这一行先注册 Git marketplace，再安装插件。安装或升级后，新建一个 Codex 任务，让新的 Skill 与 MCP 工具进入当前会话。
 
 MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用位置只检查 `/Applications/ChatGPT.app`；如果你确实安装在别处，可额外设置一个 `CODEX_APP_PATH`。首次选择皮肤时，如果当前 Codex 没有开启本机调试端口，正常退出一次即可；Watcher 会用 `open` 带上 `9335` 参数重开并恢复主题。
 
@@ -65,44 +64,9 @@ MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用
 顶部工具可以折叠为调色板图标；再次点击即可展开。
 “创建皮肤”会在空输入框中插入蓝色的原生 `skin-creator` Skill mention，并留下可编辑的“风格：”；补充完风格后再由你手动发送。
 
+切换菜单右上角的小店铺图标会在同一个弹层中打开皮肤市场，不叠加第二个窗口。市场打开时读取 [`MarcWebber/codex-skins`](https://github.com/MarcWebber/codex-skins) 的极简 Manifest，并支持本地搜索、滚动浏览、版本显示和一键下载安装。返回箭头会回到原来的纯名称切换列表。
+
 ![原生 Skin Creator mention 与参考图](./plugins/codex-skin-switcher/assets/screenshots/skin-creator.png)
-
-### Windows 一次性启动器（本地 CDP 注入）
-
-Windows 启动器把运行时复制到 `%LOCALAPPDATA%\CodexSkinSwitcher`，用 `127.0.0.1:9335` 本地 CDP 参数启动 Codex，等待页面可注入后恢复皮肤和顶部工具栏，随后立即退出。它不创建 watcher、服务、计划任务或其他后台进程，因此关闭 Codex 后不会自动重开。
-
-启动器通过自身的 `$PSScriptRoot` 动态定位插件，不包含本机仓库路径或 Codex 版本目录。首次或日常启用均可在仓库根目录执行：
-
-```powershell
-.\plugins\codex-skin-switcher\scripts\start-codex-with-skin.ps1
-```
-
-也可以双击：
-
-```text
-plugins\codex-skin-switcher\scripts\start-codex-with-skin.cmd
-```
-
-指定主题或端口：
-
-```powershell
-.\plugins\codex-skin-switcher\scripts\start-codex-with-skin.ps1 -Theme paper-lantern
-.\plugins\codex-skin-switcher\scripts\start-codex-with-skin.ps1 -Port 9444
-```
-
-启动器按 `-CodexExe`、`CODEX_APP_PATH`、运行中的 Codex、Appx 安装信息和本地缓存依次查找 `ChatGPT.exe`。自动发现失败时，可以显式提供路径：
-
-```powershell
-.\plugins\codex-skin-switcher\scripts\start-codex-with-skin.ps1 -CodexExe 'C:\路径\到\ChatGPT.exe'
-```
-
-恢复原生界面：
-
-```powershell
-.\plugins\codex-skin-switcher\scripts\start-codex-with-skin.ps1 -Theme native
-```
-
-如果 Codex 已经普通启动且没有开放所选 CDP 端口，脚本会提示你手动关闭后重试，不会强制结束进程。脚本不修改 Codex 应用包或 `~/.codex/config.toml`，也不会在后台自动重试。
 
 ### 一句话创建皮肤
 
@@ -118,16 +82,14 @@ plugins\codex-skin-switcher\scripts\start-codex-with-skin.cmd
 
 `skin-creator` 会生成主题文件，做一次格式检查，然后应用新主题。它不会增加截图脚本、常驻测试进程或 FPS 检测。
 
-## 内置主题
+## 内置 Demo 与皮肤市场
 
 | 主题 | 说明 |
 | --- | --- |
 | 原生 | 移除当前界面的主题注入 |
 | 莱依拉星梦 | 月白、雾蓝、星轨背景，带菜单子图和四张不同的主页按钮插图 |
-| 纸灯 | 米白纸张与暖色灯光 |
-| 暖暖・丹青 | 水墨青山、月白与朱砂双人背景，带丹青风格菜单插图和四张人物卡片。<br>- 部分图片原始素材取自于叠纸游戏官方周边物料、表情包；<br/>- 部分图片为基于上述官方素材，使用AI工具进行重绘得到的衍生作品。<br/>所有暖暖丹青主题相关的原始美术、角色IP版权归叠纸所有。 |
 
-莱依拉主题作为功能 demo 随插件提供，用来展示角色背景、菜单子图、主页按钮插图和自定义 SVG 图标能力。代码采用 MIT License；示例角色素材不因此获得 MIT 再授权，详见 [NOTICE](./NOTICE.md)。
+莱依拉主题作为唯一功能 Demo 随插件提供。纸灯、暖暖·丹青和桑多涅等主题由独立皮肤市场托管，避免把内容持续堆进插件包。代码采用 MIT License；示例角色素材不因此获得 MIT 再授权，详见 [NOTICE](./NOTICE.md)。
 
 ## 修改或新增皮肤
 
@@ -173,6 +135,7 @@ Watcher 不会强制退出正在使用的 Codex；它只等待正常退出，并
 - 主题和偏好只保存在本机。
 - 不上传对话、登录态、项目内容或主题图片。
 - 不包含分析统计与遥测。
+- 只有主动打开皮肤市场时才读取公开的 `MarcWebber/codex-skins`；不会后台检查更新。
 - CDP 只绑定 `127.0.0.1:9335`；不要将它改成局域网或公网地址。
 
 详见 [Privacy](./plugins/codex-skin-switcher/docs/PRIVACY.md)。实现结构和技术边界见 [Implementation](./plugins/codex-skin-switcher/docs/IMPLEMENTATION.md)。
