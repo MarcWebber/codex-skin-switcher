@@ -53,7 +53,7 @@ MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用
 
 ### 切换皮肤
 
-点击 Codex 顶部的“皮肤”按钮，然后选择一套主题。也可以直接对 Codex 说：
+点击 Codex 顶部的“皮肤”按钮，然后选择一套主题。列表最多显示五项，更多主题在面板内滚动；非内置主题可以从列表右侧删除，确认后才会执行。也可以直接对 Codex 说：
 
 ```text
 切换到莱依拉星梦
@@ -64,7 +64,7 @@ MCP 从安装后的插件根目录启动，并使用 PATH 中的 `node`。应用
 顶部工具可以折叠为调色板图标；再次点击即可展开。
 “创建皮肤”会在空输入框中插入蓝色的原生 `skin-creator` Skill mention，并留下可编辑的“风格：”；补充完风格后再由你手动发送。
 
-切换菜单右上角的小店铺图标会在同一个弹层中打开皮肤市场，不叠加第二个窗口。市场打开时读取 [`MarcWebber/codex-skins`](https://github.com/MarcWebber/codex-skins) 的极简 Manifest，并支持本地搜索、滚动浏览、版本显示、一键下载安装和删除已下载皮肤。下载成功后仍会立即切换到新皮肤；内置 Demo 不提供删除按钮。返回箭头会回到原来的纯名称切换列表。
+切换菜单右上角的小店铺图标会在同一个弹层中打开皮肤市场，不叠加第二个窗口。市场打开时读取 [`MarcWebber/codex-skins`](https://github.com/MarcWebber/codex-skins) 的极简 Manifest，并支持本地搜索、滚动浏览、版本显示、下载和删除已下载皮肤。下载完成后会显示成功提示，由你选择“应用”或“稍后”；应用时使用短暂淡入淡出过渡。内置 Demo 不提供删除按钮。返回箭头会回到紧凑的名称切换列表，本地列表不重复加入预览窗格。
 
 ![原生 Skin Creator mention 与参考图](./plugins/codex-skin-switcher/assets/screenshots/skin-creator.png)
 
