@@ -222,6 +222,8 @@ async function apply(id) {
       .skinActions{display:flex;align-items:center;justify-content:flex-end;gap:5px;margin-top:6px}
       .version{padding:2px 5px;border-radius:999px;background:color-mix(in srgb,var(--skin-accent,#789bdc) 10%,transparent);color:var(--skin-muted,#747b9b);font-size:9px}
       .install{min-width:47px;height:23px;padding:0 8px;border:1px solid color-mix(in srgb,var(--skin-accent,#789bdc) 24%,transparent);border-radius:7px;background:var(--skin-accent,#789bdc);color:white;font-size:10px;font-weight:700}
+      .install.remove{background:transparent;color:var(--skin-muted,#747b9b)}
+      .install.remove:hover{border-color:color-mix(in srgb,var(--skin-accent,#789bdc) 42%,transparent);color:var(--skin-text,#283052)}
       .install:disabled{cursor:default;background:color-mix(in srgb,var(--skin-accent,#789bdc) 12%,var(--skin-control,#fdfdff));color:var(--skin-accent,#789bdc)}
       #marketStatus{padding:10px 6px;text-align:center;color:var(--skin-muted,#747b9b);font-size:10px}
       #retry{height:24px;margin-left:5px;padding:0 7px;border:1px solid var(--skin-border,rgba(103,112,169,.2));border-radius:7px;background:var(--skin-control,#fdfdff);color:var(--skin-text,#283052);font-size:10px}
@@ -333,19 +335,29 @@ async function apply(id) {
         version.textContent = "v" + item.version.replace(/^v/i, "");
         const install = document.createElement("button");
         install.type = "button";
-        install.className = "install";
-        install.textContent = item.installed ? "已安装" : "下载";
-        install.disabled = item.installed;
+        install.className = item.removable ? "install remove" : "install";
+        install.textContent = item.removable ? "删除" : item.installed ? "已安装" : "下载";
+        install.disabled = item.installed && !item.removable;
         install.onclick = async () => {
+          const action = item.removable ? "remove" : "install";
           install.disabled = true;
-          install.textContent = "下载中";
+          install.textContent = action === "remove" ? "删除中" : "下载中";
           try {
-            await requestMarket("install", item.id);
-            item.installed = true;
+            await requestMarket(action, item.id);
+            if (action === "remove") {
+              item.installed = false;
+              item.removable = false;
+              for (const button of list.querySelectorAll(".item")) {
+                if (button.dataset.id === item.id) button.remove();
+              }
+            } else {
+              item.installed = true;
+              item.removable = true;
+            }
             renderMarket();
           } catch (error) {
             install.disabled = false;
-            install.textContent = "重试";
+            install.textContent = action === "remove" ? "重试删除" : "重试";
             marketStatus.hidden = false;
             marketStatus.textContent = error.message;
           }

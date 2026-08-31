@@ -1,6 +1,6 @@
 {
   "name": "codex-skin-switcher",
-  "version": "0.1.1+codex.20260831145500",
+  "version": "0.1.1+codex.20260831152641",
   "description": "Minimal macOS Codex skin switching, one-click skin market, prompt-based creation, and native rollback.",
   "author": {
     "name": "Marc Webber"
@@ -27,6 +27,7 @@
       "Prompt-created themes",
       "Collapsible in-app skin menu",
       "On-demand skin market",
+      "Removable downloaded skins",
       "Codex-wide surface styling",
       "Safe native fallback"
     ],

@@ -28,7 +28,7 @@ The runtime falls back to `art.png` when optional art is absent, so ordinary the
 - Preserve Codex's native structure. Prefer palette, typography, quiet backgrounds, and small semantic icon changes over decorative frames or a redesigned dashboard.
 - Never replace conversation or account avatars unless the user explicitly asks for avatar replacement.
 - For a character-led skin, treat the four home suggestion cards as four individually designed buttons. Give every card a different generated background, accent color, and recognizable character-prop icon. Never use repeated A/B/A/B artwork or four generic symbols. Preserve the native card actions and text.
-- Keep profile and help menu icons and layout native, but make their optional background artwork visibly present behind readable text. Inspect the actual opened Radix menu and anchor selectors to its expanded trigger and menu role; do not guess from width utility classes.
+- Keep profile and help menu icons and layout native, but make their optional background artwork visibly present behind readable text. Only provide the optional images: the shared runtime maps both menus from the sidebar structure. Never add selectors based on visible text, usernames, localized `aria-label` values, or dynamic Radix IDs.
 - For the main task artwork, start `--skin-art-opacity` around `.20` to `.25`. Text surfaces must stay nearly opaque.
 - Avoid neon, high saturation, ornamental borders, dense particles, and invented narrative objects unless the prompt explicitly requests them.
 - Use `--skin-font` for the interface and optional `--skin-display-font` for restrained heading contrast. Use installed system font stacks only; never download or bundle fonts.

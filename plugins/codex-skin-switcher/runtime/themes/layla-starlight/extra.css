@@ -22,22 +22,6 @@ html[data-codex-skin="layla-starlight"] [role="menu"] {
   box-shadow: 0 20px 46px rgba(74, 83, 139, .16) !important;
 }
 
-html[data-codex-skin="layla-starlight"]:has(button[aria-label="打开个人资料菜单"][aria-expanded="true"]) [data-radix-popper-content-wrapper] > [role="menu"][data-side="top"] {
-  background-color: rgba(248, 249, 255, .88) !important;
-  background-image: linear-gradient(135deg, rgba(255, 255, 255, .72), rgba(245, 247, 255, .82)), var(--skin-profile-art) !important;
-  background-position: center, right bottom !important;
-  background-size: cover, cover !important;
-  background-repeat: no-repeat !important;
-}
-
-html[data-codex-skin="layla-starlight"]:has(button[aria-label="打开帮助菜单"][aria-expanded="true"]) [data-radix-popper-content-wrapper] > [role="menu"][data-side="top"] {
-  background-color: rgba(248, 249, 255, .88) !important;
-  background-image: linear-gradient(135deg, rgba(255, 255, 255, .72), rgba(245, 247, 255, .82)), var(--skin-help-art) !important;
-  background-position: center, right bottom !important;
-  background-size: cover, cover !important;
-  background-repeat: no-repeat !important;
-}
-
 html[data-codex-skin="layla-starlight"] main:has([data-feature="game-source"]) section[class*="group/home-suggestions"] button[class*="min-h-26"] {
   --skin-home-card-art: var(--skin-home-card-art-a);
   --skin-home-card-border: rgba(78, 111, 209, .38);
