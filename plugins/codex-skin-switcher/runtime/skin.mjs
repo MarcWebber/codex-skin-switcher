@@ -267,31 +267,41 @@ async function apply(id) {
     const confirmCancel = shadow.getElementById("confirmCancel");
     const confirmPrimary = shadow.getElementById("confirmPrimary");
     let bridgeRequestId = 0;
-    const requestMarket = (action, id = "") => new Promise((resolve, reject) => {
-      const requestId = ++bridgeRequestId;
-      let timer;
-      const finish = (callback, value) => {
-        clearTimeout(timer);
-        window.removeEventListener("message", receive);
-        callback(value);
-      };
-      const receive = (event) => {
-        if (event.source !== window) return;
-        if (event.data?.requestId !== requestId) return;
-        if (event.data.type === "codex-skin-accepted") {
+    const waitForBridge = async () => {
+      const deadline = Date.now() + 30000;
+      while (typeof window[bridgeName] !== "function") {
+        if (Date.now() >= deadline) throw new Error("皮肤服务未就绪");
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      return window[bridgeName];
+    };
+    const requestMarket = async (action, id = "") => {
+      const bridge = await waitForBridge();
+      return new Promise((resolve, reject) => {
+        const requestId = ++bridgeRequestId;
+        let timer;
+        const finish = (callback, value) => {
           clearTimeout(timer);
-          timer = setTimeout(() => finish(reject, new Error("皮肤操作超时")), 30000);
-          return;
-        }
-        if (event.data.type !== "codex-skin-response") return;
-        if (!event.data.ok) finish(reject, new Error(event.data.error || "市场请求失败"));
-        else finish(resolve, event.data);
-      };
-      timer = setTimeout(() => finish(reject, new Error("皮肤服务未就绪")), 1500);
-      window.addEventListener("message", receive);
-      if (typeof window[bridgeName] !== "function") return finish(reject, new Error("市场连接未就绪"));
-      window[bridgeName](JSON.stringify({ requestId, action, id }));
-    });
+          window.removeEventListener("message", receive);
+          callback(value);
+        };
+        const receive = (event) => {
+          if (event.source !== window) return;
+          if (event.data?.requestId !== requestId) return;
+          if (event.data.type === "codex-skin-accepted") {
+            clearTimeout(timer);
+            timer = setTimeout(() => finish(reject, new Error("皮肤操作超时")), 30000);
+            return;
+          }
+          if (event.data.type !== "codex-skin-response") return;
+          if (!event.data.ok) finish(reject, new Error(event.data.error || "市场请求失败"));
+          else finish(resolve, event.data);
+        };
+        timer = setTimeout(() => finish(reject, new Error("皮肤服务未就绪")), 1500);
+        window.addEventListener("message", receive);
+        bridge(JSON.stringify({ requestId, action, id }));
+      });
+    };
     let localItems = [{ id: "native", label: "原生", removable: false }, ...themes.map((theme) => ({
       id: theme.id,
       label: theme.label,
@@ -441,12 +451,16 @@ async function apply(id) {
       }
     };
     const loadLocal = async () => {
+      title.textContent = typeof window[bridgeName] === "function" ? "切换皮肤" : "正在连接…";
       try {
         const result = await requestMarket("local");
         if (Array.isArray(result.themes)) {
           localItems = [{ id: "native", label: "原生", removable: false }, ...result.themes];
         }
-      } catch {}
+        title.textContent = "切换皮肤";
+      } catch {
+        title.textContent = "皮肤服务未就绪";
+      }
       renderLocal();
     };
     const renderMarket = () => {

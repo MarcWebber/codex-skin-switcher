@@ -15,6 +15,7 @@ const stateRoot = process.env.CODEX_SKIN_STATE_ROOT || path.join(os.homedir(), "
 const runtime = path.join(stateRoot, "runtime");
 const themesRoot = path.join(stateRoot, "themes");
 const preferenceFile = path.join(stateRoot, "preference.json");
+const pendingRelaunchFile = path.join(stateRoot, "pending-relaunch");
 const plistFile = path.join(os.homedir(), "Library", "LaunchAgents", "com.codex-skin-switcher.plist");
 const defaultAppPath = "/Applications/ChatGPT.app";
 const watcherLabel = "com.codex-skin-switcher";
@@ -342,6 +343,7 @@ async function ensureWatcher(app) {
 
 async function disableWatcher() {
   await run("/bin/launchctl", ["bootout", `gui/${process.getuid()}/${watcherLabel}`], 5000);
+  await fs.rm(pendingRelaunchFile, { force: true });
   await fs.rm(plistFile, { force: true });
 }
 
@@ -370,12 +372,20 @@ async function setSkin(preset) {
     : (await themes()).find((item) => item.id === preset);
   if (!selected) throw new Error(`未知皮肤：${preset}`);
   await writeJson(preferenceFile, { preset });
+  await fs.rm(pendingRelaunchFile, { force: true });
 
+  const ready = await cdpReady();
   const app = await findCodexApp();
   if (!app) return status(`已保存 ${selected.label}，但未找到 ${defaultAppPath}；如安装在其他位置，请设置 CODEX_APP_PATH。`);
-  await ensureWatcher(app);
+  if (preset !== "native" && !ready) await fs.writeFile(pendingRelaunchFile, "");
+  try {
+    await ensureWatcher(app);
+  } catch (error) {
+    await fs.rm(pendingRelaunchFile, { force: true });
+    throw error;
+  }
 
-  if (!await cdpReady()) {
+  if (!ready) {
     return status(`已保存 ${selected.label}；正常退出 Codex 后，Watcher 会带本机调试参数重开并保持皮肤入口。`);
   }
 
@@ -421,7 +431,7 @@ async function handle(method, params = {}) {
   if (method === "initialize") return {
     protocolVersion: params.protocolVersion || "2025-06-18",
     capabilities: { tools: { listChanged: false } },
-    serverInfo: { name: "codex-skin-switcher", version: "0.1.1" },
+    serverInfo: { name: "codex-skin-switcher", version: "0.1.2" },
   };
   if (method === "ping") return {};
   if (method === "tools/list") return { tools };
@@ -442,11 +452,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === sourceFile) {
   let stopUi = () => {};
   if (process.platform === "darwin") {
     await prepare();
+    stopUi = startUiApi();
     if (!process.env.CODEX_SKIN_STATE_ROOT) {
       const app = await findCodexApp();
       if (app) await ensureWatcher(app);
     }
-    stopUi = startUiApi();
   }
   const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
   for await (const line of input) {
