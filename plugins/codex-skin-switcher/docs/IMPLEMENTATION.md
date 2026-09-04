@@ -14,11 +14,11 @@ skills/skin-creator/
 └── scripts/publish.mjs
 ```
 
-`server.mjs` 提供 `get_skin_status`、`set_skin` 和仅绑定 `127.0.0.1:9336` 的界面接口，负责复制运行时、发现主题、保存偏好、下载主题并调用 `skin.mjs`。顶部菜单、Skill 与市场安装都通过 `setSkin` 进入同一条切换链路。`skin.mjs` 通过本机 CDP 连接 Codex 的 `app://-/index.html`，写入一个主题 `<style>`、`data-codex-skin` 和顶部切换器。`base.css` 集中维护当前 Codex 宿主页面的共享映射。
+`server.mjs` 提供 `get_skin_status`、`set_skin` 和顶部工具使用的 CDP binding，负责复制运行时、发现主题、保存偏好、下载主题并调用 `skin.mjs`。顶部菜单、Skill 与市场安装都通过 `setSkin` 进入同一条切换链路。`skin.mjs` 通过本机 CDP 连接 Codex 的 `app://-/index.html`，写入一个主题 `<style>`、`data-codex-skin` 和顶部切换器。`base.css` 集中维护当前 Codex 宿主页面的共享映射。
 
 项目没有 FPS 侦测、Spotlight 搜索、bundle id 校验或旧版选择器。应用路径只有两项：默认 `/Applications/ChatGPT.app`，以及可选的 `CODEX_APP_PATH`。
 
-Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。插件先启动本机界面接口，再注册最小 LaunchAgent。只有用户在端口未就绪时明确选择非原生主题，`server.mjs` 才写入一次性 `pending-relaunch`；`watch.sh` 等待当前 Codex 正常退出，通过 `/usr/bin/open` 补充本机参数，并在成功拉起后立即消费该标记。没有标记时 Watcher 正常退出，因此用户之后主动关闭 Codex 不会再次被拉起。它只按主可执行文件识别窗口，不会把 tmux、CLI 或小助手的 Node 进程当作 Codex。原生模式会取消尚未消费的启动请求。Watcher 不强制退出进程、不扫描安装位置、不采集性能数据；启动或注入失败时发送一次 macOS 通知、删除自己的 plist 并退出。
+Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。插件先建立顶部工具使用的 binding，再启动一次性 Watcher 恢复当前主题。只有用户在端口未就绪时明确选择非原生主题，`server.mjs` 才写入 `pending-relaunch`；`watch.sh` 等待当前 Codex 正常退出，通过 `/usr/bin/open` 补充本机参数，恢复主题后立即消费标记并退出。没有标记且端口不可用时 Watcher 直接退出，因此用户之后主动关闭 Codex 不会再次被拉起。它只按主可执行文件识别窗口，不会把 tmux、CLI 或小助手的 Node 进程当作 Codex。原生模式会取消尚未消费的启动请求。Watcher 不强制退出进程、不扫描安装位置、不采集性能数据；启动或注入失败时发送一次 macOS 通知、删除自己的 plist 并退出。
 
 ## 主题注入
 
@@ -28,7 +28,7 @@ Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。插件先启动本机界面�
 
 “创建皮肤”只在空输入框中插入 Codex 原生的 `codex-skin-switcher:skin-creator` Skill mention 和可编辑的“风格：”，不会覆盖已有输入，也不会自动发送。
 
-“皮肤市场”与本地列表复用同一个 Shadow DOM 弹层。顶部工具通过 Codex 已开启的本机 CDP binding 发送固定的读取、安装和切换动作，由占用 `127.0.0.1:9336` 的插件进程处理，再用 `postMessage` 返回结果；绑定尚未完成时，本地菜单显示“正在连接…”并在 30 秒内自动等待。页面自身不发起网络请求，也不需要放宽 CSP。本地列表最多显示五项并在超出后滚动，只保留名称、当前状态与非内置主题的删除入口；预览图只在市场使用。打开市场时才从 GitHub Raw 的明确分支引用 `refs/heads/main` 读取远端 `manifest.json`，然后按固定目录规则读取每套皮肤的 `theme.json`、`meta.json` 和 `preview.png`。Manifest 只包含主题目录 ID，不重复保存路径或文件清单。搜索只过滤已经加载到内存的数据。
+“皮肤市场”与本地列表复用同一个 Shadow DOM 弹层。顶部工具通过 Codex 已开启的本机 CDP binding 发送固定的读取、安装和切换动作，插件处理后用 `postMessage` 返回结果；绑定尚未完成时，本地菜单显示“正在连接…”并在 30 秒内自动等待。页面自身不发起网络请求，也不需要放宽 CSP。本地列表最多显示五项并在超出后滚动，只保留名称、当前状态与非内置主题的删除入口；预览图只在市场使用。打开市场时才从 GitHub Raw 的明确分支引用 `refs/heads/main` 读取远端 `manifest.json`，然后按固定目录规则读取每套皮肤的 `theme.json`、`meta.json` 和 `preview.png`。Manifest 只包含主题目录 ID，不重复保存路径或文件清单。搜索只过滤已经加载到内存的数据。
 
 下载时 `server.mjs` 只读取固定名称的核心文件和可选插图，先写入临时目录，通过 `skin.mjs validate --folder` 校验后再改名安装。成功后显示“下载成功”，等待用户选择应用或稍后；失败只删除临时目录并显示错误，不影响现有主题。市场卡片与本地列表都可删除非内置主题，两个入口复用同一个确认弹窗和删除动作；删除当前主题时先恢复原生界面，内置 Demo 始终保留。
 

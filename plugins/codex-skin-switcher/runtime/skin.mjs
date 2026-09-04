@@ -13,7 +13,6 @@ const option = (name, fallback = null) => {
 const defaultStateRoot = path.join(os.homedir(), "Library", "Application Support", "CodexSkinSwitcher");
 const stateRoot = path.resolve(option("--root", defaultStateRoot));
 const port = Number(option("--port", 9335));
-const marketPort = Number(option("--market-port", 9336));
 const creatorSkillPath = option("--creator-skill-path", "");
 const themePattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const requiredVars = [
@@ -85,9 +84,9 @@ async function loadTheme(id, customFolder = null) {
   const profileArtUrl = optionalUrl("profile-art.png", artUrl);
   const helpArtUrl = optionalUrl("help-art.png", artUrl);
   const homeCardAUrl = optionalUrl("home-card-a.png", artUrl);
-  const homeCardBUrl = optionalUrl("home-card-b.png", homeCardAUrl);
-  const homeCardCUrl = optionalUrl("home-card-c.png", homeCardBUrl);
-  const homeCardDUrl = optionalUrl("home-card-d.png", homeCardCUrl);
+  const homeCardBUrl = optionalUrl("home-card-b.png", artUrl);
+  const homeCardCUrl = optionalUrl("home-card-c.png", artUrl);
+  const homeCardDUrl = optionalUrl("home-card-d.png", artUrl);
   const css = `${base}\nhtml[data-codex-skin="${id}"]{${vars};--skin-art:url("${artUrl}");--skin-profile-art:url("${profileArtUrl}");--skin-help-art:url("${helpArtUrl}");--skin-home-card-art-a:url("${homeCardAUrl}");--skin-home-card-art-b:url("${homeCardBUrl}");--skin-home-card-art-c:url("${homeCardCUrl}");--skin-home-card-art-d:url("${homeCardDUrl}")}\n${extra}`;
   const hash = crypto.createHash("sha256").update(css).update(`${art.size}:${art.mtimeMs}`);
   for (const data of optionalArt.values()) if (data) hash.update(`${data.size}:${data.mtimeMs}`);
@@ -158,7 +157,6 @@ async function apply(id) {
     active: active?.fingerprint || "native",
     runtimeFingerprint,
     creatorSkillPath,
-    marketPort,
   })).digest("hex");
   return evaluate(`(() => {
     const requested = ${JSON.stringify(id)};
