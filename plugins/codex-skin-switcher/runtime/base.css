@@ -340,14 +340,13 @@ html[data-codex-skin] .xterm-viewport {
 }
 
 html[data-codex-skin] pre,
-html[data-codex-skin] code,
+html[data-codex-skin] code {
+  font-family: var(--skin-code-font) !important;
+  border-color: var(--skin-border) !important;
+}
+
 html[data-codex-skin] kbd,
 html[data-codex-skin] samp,
 html[data-codex-skin] [class*="font-mono"] {
   font-family: var(--skin-code-font) !important;
-}
-
-html[data-codex-skin] pre,
-html[data-codex-skin] code {
-  border-color: var(--skin-border) !important;
 }

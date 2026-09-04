@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { execFile as execFileCallback } from "node:child_process";
 import fs from "node:fs/promises";
-import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
@@ -20,7 +19,6 @@ const plistFile = path.join(os.homedir(), "Library", "LaunchAgents", "com.codex-
 const defaultAppPath = "/Applications/ChatGPT.app";
 const watcherLabel = "com.codex-skin-switcher";
 const port = 9335;
-const marketPort = Number(process.env.CODEX_SKIN_MARKET_PORT || 9336);
 const marketRoot = (process.env.CODEX_SKIN_MARKET_URL || "https://raw.githubusercontent.com/MarcWebber/codex-skins/refs/heads/main").replace(/\/$/, "");
 const uiBinding = "__codexSkinRequest";
 const node = process.execPath;
@@ -76,17 +74,13 @@ async function prepare() {
 }
 
 async function callRuntime(command, args = [], timeout = 5000) {
-  return run(node, [path.join(runtime, "skin.mjs"), command, "--root", stateRoot, "--port", String(port), "--market-port", String(marketPort), ...args], timeout);
+  return run(node, [path.join(runtime, "skin.mjs"), command, "--root", stateRoot, "--port", String(port), ...args], timeout);
 }
 
 async function themes() {
   const result = await callRuntime("themes");
   if (!result.ok) throw new Error(result.error);
   return JSON.parse(result.stdout);
-}
-
-async function cdpReady() {
-  return (await callRuntime("probe", [], 3000)).ok;
 }
 
 async function bundledThemes() {
@@ -99,10 +93,9 @@ async function localThemes() {
   return list.map((theme) => ({ ...theme, removable: !bundled.has(theme.id) }));
 }
 
-async function liveSkin(ready) {
-  if (!ready) return "native";
+async function liveSkin() {
   const result = await callRuntime("inspect");
-  if (!result.ok) return "native";
+  if (!result.ok) return null;
   return JSON.parse(result.stdout).id || "native";
 }
 
@@ -191,17 +184,9 @@ async function removeMarketSkin(id) {
   const preferred = await fs.readFile(preferenceFile, "utf8")
     .then((value) => JSON.parse(value).preset)
     .catch(() => "native");
-  const ready = await cdpReady();
-  if (preferred === id || await liveSkin(ready) === id) await setSkin("native");
+  if (preferred === id || await liveSkin() === id) await setSkin("native");
   await fs.rm(destination, { recursive: true, force: true });
   return { id, removed: true };
-}
-
-function sendJson(response, status, value) {
-  response.writeHead(status, {
-    "Content-Type": "application/json; charset=utf-8",
-  });
-  response.end(JSON.stringify(value));
 }
 
 async function uiAction(action, id = "") {
@@ -277,39 +262,6 @@ function startUiBridge() {
   };
 }
 
-function startUiApi() {
-  let stopBridge = () => {};
-  const server = http.createServer(async (request, response) => {
-    try {
-      const url = new URL(request.url, `http://127.0.0.1:${marketPort}`);
-      if (request.method === "GET" && url.pathname === "/local") {
-        return sendJson(response, 200, await uiAction("local"));
-      }
-      if (request.method === "GET" && url.pathname === "/market") {
-        return sendJson(response, 200, await uiAction("market"));
-      }
-      const selectMatch = request.method === "POST" && url.pathname.match(/^\/select\/([a-z0-9-]+)$/);
-      if (selectMatch) return sendJson(response, 200, await uiAction("select", selectMatch[1]));
-      const installMatch = request.method === "POST" && url.pathname.match(/^\/install\/([a-z0-9-]+)$/);
-      if (installMatch) return sendJson(response, 200, await uiAction("install", installMatch[1]));
-      const removeMatch = request.method === "POST" && url.pathname.match(/^\/remove\/([a-z0-9-]+)$/);
-      if (removeMatch) return sendJson(response, 200, await uiAction("remove", removeMatch[1]));
-      return sendJson(response, 404, { error: "Not found" });
-    } catch (error) {
-      return sendJson(response, 500, { error: error.message });
-    }
-  });
-  server.on("error", (error) => {
-    if (error.code !== "EADDRINUSE") process.stderr.write(`皮肤市场启动失败：${error.message}\n`);
-  });
-  server.once("listening", () => { stopBridge = startUiBridge(); });
-  server.listen(marketPort, "127.0.0.1");
-  return () => {
-    stopBridge();
-    if (server.listening) server.close();
-  };
-}
-
 function xml(text) {
   return String(text).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
@@ -322,10 +274,8 @@ async function ensureWatcher(app) {
 <key>Label</key><string>${watcherLabel}</string>
 <key>ProgramArguments</key><array>
 <string>${xml(path.join(runtime, "watch.sh"))}</string>
-<string>${xml(stateRoot)}</string><string>${xml(node)}</string><string>${xml(app)}</string><string>${port}</string><string>${marketPort}</string><string>${xml(creatorSkillPath)}</string><string>${xml(plistFile)}</string>
+<string>${xml(stateRoot)}</string><string>${xml(node)}</string><string>${xml(app)}</string><string>${port}</string><string>${xml(creatorSkillPath)}</string><string>${xml(plistFile)}</string>
 </array>
-<key>RunAtLoad</key><true/>
-<key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
 <key>ProcessType</key><string>Background</string>
 </dict></plist>\n`;
   const domain = `gui/${process.getuid()}`;
@@ -341,16 +291,7 @@ async function ensureWatcher(app) {
   if (!started.ok) throw new Error(`Watcher 启动失败：${started.error}`);
 }
 
-async function disableWatcher() {
-  await run("/bin/launchctl", ["bootout", `gui/${process.getuid()}/${watcherLabel}`], 5000);
-  await fs.rm(pendingRelaunchFile, { force: true });
-  await fs.rm(plistFile, { force: true });
-}
-
-async function status(message = null) {
-  const list = await themes();
-  const ready = await cdpReady();
-  const activePreset = await liveSkin(ready);
+function statusPayload(list, activePreset, ready, message) {
   return {
     activePreset,
     cdpReady: ready,
@@ -366,18 +307,35 @@ async function status(message = null) {
   };
 }
 
+async function status() {
+  const list = await themes();
+  const activePreset = await liveSkin();
+  return statusPayload(list, activePreset || "native", activePreset !== null);
+}
+
 async function setSkin(preset) {
+  const list = await themes();
   const selected = preset === "native"
     ? { id: "native", label: "Codex 原生界面" }
-    : (await themes()).find((item) => item.id === preset);
+    : list.find((item) => item.id === preset);
   if (!selected) throw new Error(`未知皮肤：${preset}`);
   await writeJson(preferenceFile, { preset });
   await fs.rm(pendingRelaunchFile, { force: true });
 
-  const ready = await cdpReady();
+  const ready = await liveSkin() !== null;
+  if (ready) {
+    const applied = await callRuntime("apply", ["--theme", preset, "--creator-skill-path", creatorSkillPath], 12000);
+    if (!applied.ok) throw new Error(`皮肤注入失败：${applied.error}`);
+    return statusPayload(list, preset, true, preset === "native" ? "已恢复 Codex 原生界面，皮肤入口保持可用。" : `已切换到 ${selected.label}。`);
+  }
+
+  if (preset === "native") {
+    return statusPayload(list, "native", false, "已保存原生界面；当前 Codex 未开启皮肤端口。");
+  }
+
   const app = await findCodexApp();
-  if (!app) return status(`已保存 ${selected.label}，但未找到 ${defaultAppPath}；如安装在其他位置，请设置 CODEX_APP_PATH。`);
-  if (preset !== "native" && !ready) await fs.writeFile(pendingRelaunchFile, "");
+  if (!app) return statusPayload(list, "native", false, `已保存 ${selected.label}，但未找到 ${defaultAppPath}；如安装在其他位置，请设置 CODEX_APP_PATH。`);
+  await fs.writeFile(pendingRelaunchFile, "");
   try {
     await ensureWatcher(app);
   } catch (error) {
@@ -385,16 +343,7 @@ async function setSkin(preset) {
     throw error;
   }
 
-  if (!ready) {
-    return status(`已保存 ${selected.label}；正常退出 Codex 后，Watcher 会带本机调试参数重开并保持皮肤入口。`);
-  }
-
-  const applied = await callRuntime("apply", ["--theme", preset, "--creator-skill-path", creatorSkillPath], 12000);
-  if (!applied.ok) {
-    await disableWatcher();
-    throw new Error(`皮肤注入失败，Watcher 已关闭；下次请正常打开 Codex：${applied.error}`);
-  }
-  return status(preset === "native" ? "已恢复 Codex 原生界面，皮肤入口保持可用。" : `已切换到 ${selected.label}。`);
+  return statusPayload(list, "native", false, `已保存 ${selected.label}；正常退出 Codex 后，Watcher 会带本机调试参数重开并恢复皮肤。`);
 }
 
 const statusSchema = {
@@ -449,10 +398,10 @@ async function handle(method, params = {}) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === sourceFile) {
-  let stopUi = () => {};
+  let stopBridge = () => {};
   if (process.platform === "darwin") {
     await prepare();
-    stopUi = startUiApi();
+    stopBridge = startUiBridge();
     if (!process.env.CODEX_SKIN_STATE_ROOT) {
       const app = await findCodexApp();
       if (app) await ensureWatcher(app);
@@ -474,7 +423,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === sourceFile) {
       process.stdout.write(`${JSON.stringify({ jsonrpc: "2.0", id: request.id, error: { code: error.code || -32603, message: error.message } })}\n`);
     }
   }
-  stopUi();
+  stopBridge();
 }
 
 export { installMarketSkin, localThemes, marketSkins, prepare, removeMarketSkin };

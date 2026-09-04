@@ -29,7 +29,7 @@ test("plugin manifests resolve and the MCP server lists its tools", async () => 
       { jsonrpc: "2.0", id: 2, method: "tools/list", params: {} },
     ].map(JSON.stringify).join("\n") + "\n";
     const result = spawnSync(process.execPath, [path.join(pluginRoot, "server.mjs")], {
-      env: { ...process.env, CODEX_SKIN_MARKET_PORT: "0", CODEX_SKIN_STATE_ROOT: state },
+      env: { ...process.env, CODEX_SKIN_STATE_ROOT: state },
       input,
       encoding: "utf8",
       timeout: 3000,
