@@ -7,6 +7,7 @@ import readline from "node:readline";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { appProcess, watchApp } from "./runtime/watcher.mjs";
+import { connectPage } from "./runtime/cdp.mjs";
 
 const execFile = promisify(execFileCallback);
 const sourceFile = fileURLToPath(import.meta.url);
@@ -59,7 +60,7 @@ async function findCodexApp() {
 async function prepare() {
   await fs.mkdir(runtime, { recursive: true });
   await fs.mkdir(themesRoot, { recursive: true });
-  for (const file of ["skin.mjs", "base.css"]) {
+  for (const file of ["skin.mjs", "cdp.mjs", "base.css"]) {
     await fs.copyFile(path.join(root, "runtime", file), path.join(runtime, file));
   }
   const builtins = path.join(root, "runtime", "themes");
@@ -197,66 +198,66 @@ async function uiAction(action, id = "") {
   throw new Error("未知市场操作");
 }
 
-function startUiBridge() {
+function startUiBridge({
+  connect = () => connectPage(port),
+  apply = (preset) => callRuntime("apply", ["--theme", preset, "--creator-skill-path", creatorSkillPath], 12000),
+} = {}) {
   let timer = null;
   const retry = () => {
     if (timer) return;
     timer = setTimeout(() => {
       timer = null;
-      void connect();
+      void attach();
     }, 1000);
     timer.unref();
   };
-  const connect = async () => {
+  const attach = async () => {
+    let connection;
     try {
-      const items = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(1000) }).then((response) => response.json());
-      const target = items.find((item) => item.type === "page" && item.url === "app://-/index.html");
-      if (!target) return retry();
-      const connection = new WebSocket(target.webSocketDebuggerUrl);
-      await new Promise((resolve, reject) => {
-        connection.addEventListener("open", resolve, { once: true });
-        connection.addEventListener("error", reject, { once: true });
-      });
-      let requestId = 0;
-      const send = (method, params = {}) => {
-        if (connection.readyState === WebSocket.OPEN) connection.send(JSON.stringify({ id: ++requestId, method, params }));
-        return requestId;
-      };
-      let restoring = null;
-      const restore = () => {
+      connection = await connect();
+      const { socket, send } = connection;
+      let restoring = false;
+      let restoreRequested = false;
+      const restore = async () => {
+        restoreRequested = true;
         if (restoring) return;
-        restoring = (async () => {
+        restoring = true;
+        while (restoreRequested && socket.readyState === WebSocket.OPEN) {
+          restoreRequested = false;
           const preset = await fs.readFile(preferenceFile, "utf8").then((text) => JSON.parse(text).preset || "native").catch(() => "native");
-          const applied = await callRuntime("apply", ["--theme", preset, "--creator-skill-path", creatorSkillPath], 12000);
-          if (!applied.ok) throw new Error(applied.error);
-        })().catch((error) => console.error(`皮肤恢复失败：${error.message}`)).finally(() => { restoring = null; });
+          const applied = await apply(preset);
+          if (!applied.ok) console.error(`皮肤恢复失败：${applied.error}`);
+        }
+        restoring = false;
       };
-      connection.addEventListener("close", retry, { once: true });
-      connection.addEventListener("message", (event) => {
+      socket.addEventListener("close", retry, { once: true });
+      socket.addEventListener("message", (event) => {
         const message = JSON.parse(String(event.data));
-        if ((message.id === bindingRequest && !message.error) || message.method === "Page.loadEventFired") restore();
+        if (message.method === "Page.loadEventFired") void restore();
         if (message.method !== "Runtime.bindingCalled" || message.params.name !== uiBinding) return;
         void (async () => {
           let request = {};
           let response;
           try {
             request = JSON.parse(message.params.payload);
-            send("Runtime.evaluate", { expression: `window.postMessage(${JSON.stringify({ type: "codex-skin-accepted", requestId: request.requestId })}, "*")` });
+            await send("Runtime.evaluate", { expression: `window.postMessage(${JSON.stringify({ type: "codex-skin-accepted", requestId: request.requestId })}, "*")` });
             response = { type: "codex-skin-response", requestId: request.requestId, ok: true, ...await uiAction(request.action, request.id) };
           } catch (error) {
             response = { type: "codex-skin-response", requestId: request.requestId, ok: false, error: error.message };
           }
-          send("Runtime.evaluate", { expression: `window.postMessage(${JSON.stringify(response)}, "*")` });
-        })();
+          await send("Runtime.evaluate", { expression: `window.postMessage(${JSON.stringify(response)}, "*")` });
+        })().catch((error) => console.error(error.message));
       });
-      send("Runtime.enable");
-      send("Page.enable");
-      const bindingRequest = send("Runtime.addBinding", { name: uiBinding });
+      await send("Runtime.enable");
+      await send("Runtime.addBinding", { name: uiBinding });
+      await send("Page.enable");
+      void restore();
     } catch {
+      connection?.socket.close();
       retry();
     }
   };
-  void connect();
+  return attach();
 }
 
 function xml(text) {
@@ -412,4 +413,4 @@ if (process.argv[1] && path.resolve(process.argv[1]) === sourceFile) {
   }
 }
 
-export { installMarketSkin, localThemes, marketSkins, prepare, removeSkin };
+export { installMarketSkin, localThemes, marketSkins, prepare, removeSkin, startUiBridge };

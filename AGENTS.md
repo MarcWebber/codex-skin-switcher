@@ -14,6 +14,7 @@ These rules apply to the whole repository.
 - `.agents/plugins/marketplace.json` exposes the repository plugin to Codex Marketplace.
 - `plugins/codex-skin-switcher/server.mjs` is the small MCP coordinator: market download, theme discovery, preference persistence, local CDP calls, and macOS Watcher registration.
 - `plugins/codex-skin-switcher/runtime/skin.mjs` owns theme validation, CSS assembly, live injection, the single-panel switcher/market UI, and native cleanup.
+- `plugins/codex-skin-switcher/runtime/cdp.mjs` owns the shared main-page connection, command timeouts, and disconnect handling for injection and the UI binding.
 - `plugins/codex-skin-switcher/runtime/base.css` contains shared mappings for the current Codex UI. Do not add old-version selector branches.
 - `plugins/codex-skin-switcher/runtime/themes/layla-starlight/` is the only bundled demo. Public themes live in `MarcWebber/codex-skins` and keep the same fixed filenames.
 - `plugins/codex-skin-switcher/runtime/watcher.mjs` handles newly launched macOS Codex processes. The single LaunchAgent runs `server.mjs --watch`, restores skins, and owns the UI binding independently of MCP tasks.
