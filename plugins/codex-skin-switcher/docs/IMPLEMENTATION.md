@@ -7,7 +7,7 @@ server.mjs
 runtime/
 ├── base.css
 ├── skin.mjs
-├── watch.sh
+├── watcher.mjs
 └── themes/<id>/{theme.json,extra.css,art.png[,可选子图.png]}
 skills/skin-creator/
 ├── SKILL.md
@@ -18,7 +18,13 @@ skills/skin-creator/
 
 项目没有 FPS 侦测、Spotlight 搜索、bundle id 校验或旧版选择器。应用路径只有两项：默认 `/Applications/ChatGPT.app`，以及可选的 `CODEX_APP_PATH`。
 
-Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。插件先建立顶部工具使用的 binding，再启动一次性 Watcher 恢复当前主题。只有用户在端口未就绪时明确选择非原生主题，`server.mjs` 才写入 `pending-relaunch`；`watch.sh` 等待当前 Codex 正常退出，通过 `/usr/bin/open` 补充本机参数，恢复主题后立即消费标记并退出。没有标记且端口不可用时 Watcher 直接退出，因此用户之后主动关闭 Codex 不会再次被拉起。它只按主可执行文件识别窗口，不会把 tmux、CLI 或小助手的 Node 进程当作 Codex。原生模式会取消尚未消费的启动请求。Watcher 不强制退出进程、不扫描安装位置、不采集性能数据；启动或注入失败时发送一次 macOS 通知、删除自己的 plist 并退出。
+Codex 需要在本机 `127.0.0.1:9335` 开启 CDP。首次使用插件会注册一个 macOS LaunchAgent，登录时启动 `server.mjs --watch`。这个进程独立于任务，统一负责顶部菜单连接与主题恢复；MCP 进程只处理工具请求，不再重复建立界面连接。
+
+`watcher.mjs` 每两秒查看一次主进程，只匹配主可执行文件，不把 CLI、tmux 或小助手当作 Codex。每个新 PID 先记录到 `watcher-pid`，再检查启动状态。安装和升级时会预先记录当前 PID，因此不打断当前会话；运行超过 30 秒的会话也不自动重启。
+
+选用非原生主题、未携带调试端口参数且端口尚未开放的新进程，会等待三秒并重新确认状态，然后请求正常退出，再通过 `/usr/bin/open` 带参数打开一次。退出被取消、进程已变化、启动失败或注入失败，都不强制结束或循环重启。重开的 PID 同样会被记录，已带参数的进程不再重启。没有 Codex 进程时只等待，因此普通退出保持关闭。选择原生主题后不再补启动参数。
+
+连接成功和主页面重新加载时，通过同一个 `skin.mjs apply` 恢复主题。此 Watcher 不采集性能数据，不轮询市场，也不修改 Codex 应用文件。错误写入本机 `watcher.log`。
 
 ## 主题注入
 
@@ -52,7 +58,7 @@ art.png      # 本地背景图
 
 - `server.mjs`：MCP、市场下载、主题发现、偏好、Watcher 注册与 CDP 调用。
 - `skin.mjs`：主题校验、CSS 生成、CDP 注入、单弹层切换器与市场 UI。
-- `watch.sh`：消费一次启动请求，补充本机 CDP 参数并恢复主题。
+- `watcher.mjs`：识别新启动的主进程，限制一次启动修复；不会在普通退出后拉起应用。
 - `base.css`：当前 Codex 版本的按钮、消息、输入区、菜单、终端、文件、Diff 与设置页映射。
 - 主题三个核心文件：用户修改配色、字体、背景和局部风格的集中入口。
 - `skills/skin-creator/SKILL.md`：把提示词和参考图转成主题文件与可选插图。

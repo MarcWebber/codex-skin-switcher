@@ -16,7 +16,7 @@ These rules apply to the whole repository.
 - `plugins/codex-skin-switcher/runtime/skin.mjs` owns theme validation, CSS assembly, live injection, the single-panel switcher/market UI, and native cleanup.
 - `plugins/codex-skin-switcher/runtime/base.css` contains shared mappings for the current Codex UI. Do not add old-version selector branches.
 - `plugins/codex-skin-switcher/runtime/themes/layla-starlight/` is the only bundled demo. Public themes live in `MarcWebber/codex-skins` and keep the same fixed filenames.
-- `plugins/codex-skin-switcher/runtime/watch.sh` is the minimal macOS recovery launcher. It is not a performance monitor or a general process supervisor.
+- `plugins/codex-skin-switcher/runtime/watcher.mjs` handles newly launched macOS Codex processes. The single LaunchAgent runs `server.mjs --watch`, restores skins, and owns the UI binding independently of MCP tasks.
 - `plugins/codex-skin-switcher/skills/` contains the user-facing switcher and creator workflows; `docs/` explains implementation, privacy, and recovery.
 - Runtime state belongs under `~/Library/Application Support/CodexSkinSwitcher` on macOS. Never modify the Codex application bundle or `~/.codex/config.toml`.
 
@@ -26,7 +26,7 @@ These rules apply to the whole repository.
 - Do not add abstractions, classes, helpers, configuration, or dependencies for a single use unless they materially reduce complexity.
 - Support the current Codex page structure directly. If it changes, replace the mapping instead of keeping parallel old and new implementations.
 - Keep theme-specific styling in that theme's `extra.css`; keep shared host mappings in `base.css`; keep orchestration out of CSS.
-- Preserve native Codex behavior and provide a clear failure message. Do not kill or restart a user's running Codex instance.
+- Preserve native Codex behavior and provide a clear failure message. Only the startup Watcher may request a normal quit and reopen a newly launched Codex once to add the local debug flag. Never force-kill Codex, interrupt an existing session during installation, retry that restart, or reopen after a normal user quit.
 
 ## Platform scope
 
@@ -42,7 +42,7 @@ These rules apply to the whole repository.
 
 ```bash
 node --test tests/*.test.mjs
-bash -n plugins/codex-skin-switcher/runtime/watch.sh
+node --check plugins/codex-skin-switcher/runtime/watcher.mjs
 python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/plugin-creator/scripts/validate_plugin.py" plugins/codex-skin-switcher
 git diff --check
 ```

@@ -6,6 +6,7 @@ import path from "node:path";
 import readline from "node:readline";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { appProcess, watchApp } from "./runtime/watcher.mjs";
 
 const execFile = promisify(execFileCallback);
 const sourceFile = fileURLToPath(import.meta.url);
@@ -14,7 +15,6 @@ const stateRoot = process.env.CODEX_SKIN_STATE_ROOT || path.join(os.homedir(), "
 const runtime = path.join(stateRoot, "runtime");
 const themesRoot = path.join(stateRoot, "themes");
 const preferenceFile = path.join(stateRoot, "preference.json");
-const pendingRelaunchFile = path.join(stateRoot, "pending-relaunch");
 const plistFile = path.join(os.homedir(), "Library", "LaunchAgents", "com.codex-skin-switcher.plist");
 const defaultAppPath = "/Applications/ChatGPT.app";
 const watcherLabel = "com.codex-skin-switcher";
@@ -59,10 +59,9 @@ async function findCodexApp() {
 async function prepare() {
   await fs.mkdir(runtime, { recursive: true });
   await fs.mkdir(themesRoot, { recursive: true });
-  for (const file of ["skin.mjs", "watch.sh", "base.css"]) {
+  for (const file of ["skin.mjs", "base.css"]) {
     await fs.copyFile(path.join(root, "runtime", file), path.join(runtime, file));
   }
-  await fs.chmod(path.join(runtime, "watch.sh"), 0o755);
   const builtins = path.join(root, "runtime", "themes");
   for (const entry of await fs.readdir(builtins, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
@@ -176,7 +175,7 @@ async function installMarketSkin(id) {
   }
 }
 
-async function removeMarketSkin(id) {
+async function removeSkin(id) {
   if (!themePattern.test(id)) throw new Error("非法皮肤 ID");
   if ((await bundledThemes()).has(id)) throw new Error("内置皮肤不能删除");
   const destination = path.join(themesRoot, id);
@@ -194,16 +193,14 @@ async function uiAction(action, id = "") {
   if (action === "market") return { skins: await marketSkins() };
   if (action === "select") return setSkin(id);
   if (action === "install") return installMarketSkin(id);
-  if (action === "remove") return removeMarketSkin(id);
+  if (action === "remove") return removeSkin(id);
   throw new Error("未知市场操作");
 }
 
 function startUiBridge() {
-  let stopped = false;
   let timer = null;
-  let socket = null;
   const retry = () => {
-    if (stopped || timer) return;
+    if (timer) return;
     timer = setTimeout(() => {
       timer = null;
       void connect();
@@ -211,28 +208,33 @@ function startUiBridge() {
     timer.unref();
   };
   const connect = async () => {
-    if (stopped) return;
     try {
       const items = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(1000) }).then((response) => response.json());
       const target = items.find((item) => item.type === "page" && item.url === "app://-/index.html");
       if (!target) return retry();
       const connection = new WebSocket(target.webSocketDebuggerUrl);
-      socket = connection;
       await new Promise((resolve, reject) => {
         connection.addEventListener("open", resolve, { once: true });
         connection.addEventListener("error", reject, { once: true });
       });
-      if (stopped) return connection.close();
       let requestId = 0;
       const send = (method, params = {}) => {
         if (connection.readyState === WebSocket.OPEN) connection.send(JSON.stringify({ id: ++requestId, method, params }));
+        return requestId;
       };
-      connection.addEventListener("close", () => {
-        if (socket === connection) socket = null;
-        retry();
-      }, { once: true });
+      let restoring = null;
+      const restore = () => {
+        if (restoring) return;
+        restoring = (async () => {
+          const preset = await fs.readFile(preferenceFile, "utf8").then((text) => JSON.parse(text).preset || "native").catch(() => "native");
+          const applied = await callRuntime("apply", ["--theme", preset, "--creator-skill-path", creatorSkillPath], 12000);
+          if (!applied.ok) throw new Error(applied.error);
+        })().catch((error) => console.error(`皮肤恢复失败：${error.message}`)).finally(() => { restoring = null; });
+      };
+      connection.addEventListener("close", retry, { once: true });
       connection.addEventListener("message", (event) => {
         const message = JSON.parse(String(event.data));
+        if ((message.id === bindingRequest && !message.error) || message.method === "Page.loadEventFired") restore();
         if (message.method !== "Runtime.bindingCalled" || message.params.name !== uiBinding) return;
         void (async () => {
           let request = {};
@@ -248,18 +250,13 @@ function startUiBridge() {
         })();
       });
       send("Runtime.enable");
-      send("Runtime.addBinding", { name: uiBinding });
+      send("Page.enable");
+      const bindingRequest = send("Runtime.addBinding", { name: uiBinding });
     } catch {
-      socket = null;
       retry();
     }
   };
   void connect();
-  return () => {
-    stopped = true;
-    clearTimeout(timer);
-    if (socket?.readyState === WebSocket.OPEN) socket.close();
-  };
 }
 
 function xml(text) {
@@ -273,22 +270,24 @@ async function ensureWatcher(app) {
 <plist version="1.0"><dict>
 <key>Label</key><string>${watcherLabel}</string>
 <key>ProgramArguments</key><array>
-<string>${xml(path.join(runtime, "watch.sh"))}</string>
-<string>${xml(stateRoot)}</string><string>${xml(node)}</string><string>${xml(app)}</string><string>${port}</string><string>${xml(creatorSkillPath)}</string><string>${xml(plistFile)}</string>
+<string>${xml(node)}</string><string>${xml(sourceFile)}</string><string>--watch</string><string>${xml(app)}</string>
 </array>
+<key>RunAtLoad</key><true/>
+<key>KeepAlive</key><true/>
 <key>ProcessType</key><string>Background</string>
+<key>StandardErrorPath</key><string>${xml(path.join(stateRoot, "watcher.log"))}</string>
 </dict></plist>\n`;
   const domain = `gui/${process.getuid()}`;
   const target = `${domain}/${watcherLabel}`;
   const loaded = (await run("/bin/launchctl", ["print", target], 5000)).ok;
   if (await fs.readFile(plistFile, "utf8").catch(() => null) !== plist || !loaded) {
     if (loaded) await run("/bin/launchctl", ["bootout", target], 5000);
+    // Installing/upgrading must not interrupt an already open Codex session.
+    await fs.writeFile(path.join(stateRoot, "watcher-pid"), String((await appProcess(app))?.pid || 0));
     await fs.writeFile(plistFile, plist);
     const registered = await run("/bin/launchctl", ["bootstrap", domain, plistFile], 5000);
     if (!registered.ok) throw new Error(`Watcher 注册失败：${registered.error}`);
   }
-  const started = await run("/bin/launchctl", ["kickstart", target], 5000);
-  if (!started.ok) throw new Error(`Watcher 启动失败：${started.error}`);
 }
 
 function statusPayload(list, activePreset, ready, message) {
@@ -320,7 +319,6 @@ async function setSkin(preset) {
     : list.find((item) => item.id === preset);
   if (!selected) throw new Error(`未知皮肤：${preset}`);
   await writeJson(preferenceFile, { preset });
-  await fs.rm(pendingRelaunchFile, { force: true });
 
   const ready = await liveSkin() !== null;
   if (ready) {
@@ -329,21 +327,7 @@ async function setSkin(preset) {
     return statusPayload(list, preset, true, preset === "native" ? "已恢复 Codex 原生界面，皮肤入口保持可用。" : `已切换到 ${selected.label}。`);
   }
 
-  if (preset === "native") {
-    return statusPayload(list, "native", false, "已保存原生界面；当前 Codex 未开启皮肤端口。");
-  }
-
-  const app = await findCodexApp();
-  if (!app) return statusPayload(list, "native", false, `已保存 ${selected.label}，但未找到 ${defaultAppPath}；如安装在其他位置，请设置 CODEX_APP_PATH。`);
-  await fs.writeFile(pendingRelaunchFile, "");
-  try {
-    await ensureWatcher(app);
-  } catch (error) {
-    await fs.rm(pendingRelaunchFile, { force: true });
-    throw error;
-  }
-
-  return statusPayload(list, "native", false, `已保存 ${selected.label}；正常退出 Codex 后，Watcher 会带本机调试参数重开并恢复皮肤。`);
+  return statusPayload(list, "native", false, `已保存 ${selected.label}。当前会话不会被重启；下次手动打开 Codex 时自动恢复（macOS only）。`);
 }
 
 const statusSchema = {
@@ -380,7 +364,7 @@ async function handle(method, params = {}) {
   if (method === "initialize") return {
     protocolVersion: params.protocolVersion || "2025-06-18",
     capabilities: { tools: { listChanged: false } },
-    serverInfo: { name: "codex-skin-switcher", version: "0.1.2" },
+    serverInfo: { name: "codex-skin-switcher", version: "0.1.3" },
   };
   if (method === "ping") return {};
   if (method === "tools/list") return { tools };
@@ -398,10 +382,13 @@ async function handle(method, params = {}) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === sourceFile) {
-  let stopBridge = () => {};
+  if (process.argv[2] === "--watch") {
+    assertMacOS();
+    startUiBridge();
+    await watchApp(process.argv[3], stateRoot, port);
+  }
   if (process.platform === "darwin") {
     await prepare();
-    stopBridge = startUiBridge();
     if (!process.env.CODEX_SKIN_STATE_ROOT) {
       const app = await findCodexApp();
       if (app) await ensureWatcher(app);
@@ -423,7 +410,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === sourceFile) {
       process.stdout.write(`${JSON.stringify({ jsonrpc: "2.0", id: request.id, error: { code: error.code || -32603, message: error.message } })}\n`);
     }
   }
-  stopBridge();
 }
 
-export { installMarketSkin, localThemes, marketSkins, prepare, removeMarketSkin };
+export { installMarketSkin, localThemes, marketSkins, prepare, removeSkin };

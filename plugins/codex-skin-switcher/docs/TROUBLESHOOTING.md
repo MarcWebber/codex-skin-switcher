@@ -8,7 +8,7 @@
 
 ## 首次切换没有变化
 
-当前 Codex 如果没有开启本机调试端口，第一次选择主题只会保存偏好。正常退出 Codex 一次，Watcher 会带本机 `9335` 参数重新打开并恢复主题；这次启动请求只消费一次，此后主动退出会保持关闭。
+安装或升级不会重启当前 Codex。当前未开放本机调试端口时，选择主题只保存偏好。正常退出后手动点击原 App；Watcher 会检查这次新启动，必要时带本机 `9335` 参数重开一次，再恢复主题。主动退出后不会自动打开，也不需要创建新任务来唤起皮肤。
 
 Codex 安装在默认位置以外时，设置 `CODEX_APP_PATH`。升级插件后仍看到旧行为时，新建一个 Codex 任务，让当前版本的 Skill 与本地服务进入会话。
 
@@ -40,7 +40,7 @@ gh auth status
 
 ## 完全重新初始化
 
-先恢复原生，再把本地状态目录改名保留：
+先恢复原生，按下方步骤停用 Watcher，再把本地状态目录改名保留：
 
 ```bash
 mv "$HOME/Library/Application Support/CodexSkinSwitcher" \
@@ -51,4 +51,18 @@ mv "$HOME/Library/Application Support/CodexSkinSwitcher" \
 
 ## Watcher
 
-Watcher 只在存在一次性启动请求时补充本机参数并恢复主题。请求在成功拉起 Codex 后立即清除，因此普通退出不会再次打开应用。启动或注入失败时，它会提示一次后停止，让 Codex 继续按原生方式启动；不会监控 FPS，也不会扫描一组安装路径或循环重试。
+macOS only。Watcher 由 LaunchAgent 独立运行，安装时跳过当前会话，只处理以后新启动的主进程。每次手动启动最多补一次重启；带有调试端口参数、运行超过 30 秒或选用原生主题的进程不重启。退出被取消、启动失败或注入失败都不会重试。日志位于 `~/Library/Application Support/CodexSkinSwitcher/watcher.log`。
+
+检查服务状态：
+
+```bash
+launchctl print "gui/$(id -u)/com.codex-skin-switcher"
+```
+
+临时停用（不退出 Codex，也不删除皮肤）：
+
+```bash
+launchctl bootout "gui/$(id -u)/com.codex-skin-switcher"
+```
+
+彻底停用时，卸载插件并删除 `~/Library/LaunchAgents/com.codex-skin-switcher.plist`。否则下次插件初始化或登录时还会注册服务。
