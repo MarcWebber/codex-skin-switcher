@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { connectPage } from "./cdp.mjs";
 
 const args = process.argv.slice(2);
 const command = args.shift();
@@ -99,43 +100,19 @@ async function validate(id) {
   return { ok: true, id: theme.id, fingerprint: theme.fingerprint };
 }
 
-async function targets() {
-  try {
-    const response = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(900) });
-    return response.ok ? await response.json() : [];
-  } catch { return []; }
-}
-
-function isMain(item) {
-  return item.type === "page" && item.url === "app://-/index.html";
-}
-
 async function evaluate(expression) {
   if (args.includes("--dry-run")) {
     new Function(expression);
     return { ok: true, dryRun: true };
   }
-  const target = (await targets()).find(isMain);
-  if (!target) throw new Error(`端口 ${port} 没有 Codex 主页面`);
-  const socket = new WebSocket(target.webSocketDebuggerUrl);
-  await new Promise((resolve, reject) => {
-    socket.addEventListener("open", resolve, { once: true });
-    socket.addEventListener("error", reject, { once: true });
-  });
-  const result = await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("CDP 调用超时")), 8000);
-    socket.addEventListener("message", (event) => {
-      const message = JSON.parse(String(event.data));
-      if (message.id !== 1) return;
-      clearTimeout(timer);
-      if (message.error) reject(new Error(message.error.message));
-      else resolve(message.result);
-    });
-    socket.send(JSON.stringify({ id: 1, method: "Runtime.evaluate", params: { expression, returnByValue: true } }));
-  });
-  socket.close();
-  if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
-  return result.result?.value;
+  const connection = await connectPage(port);
+  try {
+    const result = await connection.send("Runtime.evaluate", { expression, returnByValue: true });
+    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
+    return result.result?.value;
+  } finally {
+    connection.socket.close();
+  }
 }
 
 async function apply(id) {
@@ -169,8 +146,8 @@ async function apply(id) {
     const toolbarId = "codex-skin-toolbar";
     const collapsedKey = "codex-skin-toolbar-collapsed";
     const current = window[key];
-    if (current?.bundleFingerprint === bundleFingerprint && document.getElementById(toolbarId)) {
-      current.activate(requested);
+    if (current?.bundleFingerprint === bundleFingerprint && current.id === requested
+      && document.getElementById(styleId) && document.getElementById(toolbarId)) {
       return { ok: true, id: current.id, unchanged: true };
     }
     current?.cleanup?.();
@@ -598,7 +575,6 @@ async function inspect() {
 
 if (command === "themes") console.log(JSON.stringify(await listThemes(), null, 2));
 else if (command === "validate") console.log(JSON.stringify(await validate(option("--theme"))));
-else if (command === "probe") process.exit((await targets()).some(isMain) ? 0 : 1);
 else if (command === "inspect") console.log(JSON.stringify(await inspect()));
 else if (command === "apply") console.log(JSON.stringify(await apply(option("--theme"))));
-else throw new Error("用法：skin.mjs themes|validate|probe|inspect|apply");
+else throw new Error("用法：skin.mjs themes|validate|inspect|apply");

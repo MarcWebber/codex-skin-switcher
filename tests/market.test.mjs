@@ -54,7 +54,7 @@ test("market accepts the minimal manifest and rejects invalid formats", async ()
     assert.equal(fetchCount, catalogFetches);
     assert.deepEqual(await market.installMarketSkin("remote-skin"), { id: "remote-skin", installed: true });
     assert.equal((await market.localThemes()).find((theme) => theme.id === "remote-skin").removable, true);
-    assert.deepEqual(await market.removeMarketSkin("remote-skin"), { id: "remote-skin", removed: true });
+    assert.deepEqual(await market.removeSkin("remote-skin"), { id: "remote-skin", removed: true });
 
     globalThis.fetch = async () => new Response("{}", { status: 200 });
     const invalid = await import(`${serverFile}?invalid=${Date.now()}`);

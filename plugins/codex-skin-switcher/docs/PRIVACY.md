@@ -16,7 +16,7 @@ Codex Skin Switcher 是本地 macOS 插件。
 ~/Library/LaunchAgents/com.codex-skin-switcher.plist
 ```
 
-选择原生主题不会删除该文件。主题恢复失败时 Watcher 会自行停用；也可以按 Troubleshooting 中的恢复步骤手动停用。
+选择原生主题不会删除该文件，但不再触发启动重启。Watcher 只在新启动的 Codex 缺少端口时请求一次正常退出并带参数重开；普通退出保持关闭，恢复失败不循环重启。可以按 Troubleshooting 中的步骤手动停用。
 
 这些文件不会由插件上传。插件不读取或发送 Codex 对话、登录态、项目文件与账号信息，也不包含分析统计、遥测或广告代码。
 

@@ -58,7 +58,9 @@ codex plugin marketplace add MarcWebber/codex-skin-switcher && codex plugin add 
 切换到莱依拉星梦
 ```
 
-首次切换时，如果当前 Codex 没有开启本机调试端口，正常退出一次再重新打开。
+首次安装不会打断当前会话。如果皮肤尚未显示，正常退出后，仍然点击原来的 Codex App 打开即可。后续启动不需要手动调用插件。
+
+macOS only：Watcher 发现新启动的 Codex 缺少调试端口时，会正常退出并带参数重开一次，然后恢复上次的皮肤；已经带参数、正在使用的会话和原生模式不会重启。主动退出后保持关闭，恢复失败也不循环重启。
 
 ## 2.4 恢复
 
@@ -210,7 +212,7 @@ Skin Creator 把提示词和参考图做成主题；想分享时，再通过 Pul
 
 如果 Codex 升级后出现局部失效、背景不显示、白字白按钮、菜单失配或市场加载失败，请查看 [Troubleshooting](https://github.com/MarcWebber/codex-skin-switcher/blob/main/plugins/codex-skin-switcher/docs/TROUBLESHOOTING.md)。
 
-注入失败时 Watcher 只提示一次并停止，随后 Codex 可以按原生方式正常启动。
+注入失败会记录到本机 `~/Library/Application Support/CodexSkinSwitcher/watcher.log`，不会再次重启 Codex。停用方法见 Troubleshooting。
 
 # 8. 兼容性
 
