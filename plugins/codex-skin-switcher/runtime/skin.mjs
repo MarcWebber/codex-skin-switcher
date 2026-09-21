@@ -146,8 +146,8 @@ async function apply(id) {
     const toolbarId = "codex-skin-toolbar";
     const collapsedKey = "codex-skin-toolbar-collapsed";
     const current = window[key];
-    if (current?.bundleFingerprint === bundleFingerprint && document.getElementById(toolbarId)) {
-      current.activate(requested);
+    if (current?.bundleFingerprint === bundleFingerprint && current.id === requested
+      && document.getElementById(styleId) && document.getElementById(toolbarId)) {
       return { ok: true, id: current.id, unchanged: true };
     }
     current?.cleanup?.();
