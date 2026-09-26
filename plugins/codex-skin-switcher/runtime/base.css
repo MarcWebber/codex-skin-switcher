@@ -245,7 +245,7 @@ html[data-codex-skin] [data-radix-popper-content-wrapper] > * {
   backdrop-filter: blur(20px);
 }
 
-html[data-codex-skin]:has([data-app-action-sidebar-scroll]):has(nav + div button[aria-haspopup="menu"][aria-expanded="true"] > img) [data-radix-popper-content-wrapper] > [role="menu"][data-side="top"] {
+html[data-codex-skin] [role="menu"][data-codex-skin-menu="profile"] {
   background-color: var(--skin-control) !important;
   background-image: linear-gradient(135deg, color-mix(in srgb, var(--skin-control) 80%, transparent), color-mix(in srgb, var(--skin-surface) 86%, transparent)), var(--skin-profile-art) !important;
   background-position: center, right bottom !important;
@@ -253,7 +253,7 @@ html[data-codex-skin]:has([data-app-action-sidebar-scroll]):has(nav + div button
   background-repeat: no-repeat !important;
 }
 
-html[data-codex-skin]:has([data-app-action-sidebar-scroll]):has(nav + div button[aria-haspopup="menu"][aria-expanded="true"] > svg) [data-radix-popper-content-wrapper] > [role="menu"][data-side="top"] {
+html[data-codex-skin] [role="menu"][data-codex-skin-menu="help"] {
   background-color: var(--skin-control) !important;
   background-image: linear-gradient(135deg, color-mix(in srgb, var(--skin-control) 80%, transparent), color-mix(in srgb, var(--skin-surface) 86%, transparent)), var(--skin-help-art) !important;
   background-position: center, right bottom !important;

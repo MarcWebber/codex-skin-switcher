@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { connectPage } from "./cdp.mjs";
 
 const args = process.argv.slice(2);
@@ -25,6 +26,16 @@ const optionalArtFiles = [
   "profile-art.png", "help-art.png",
   "home-card-a.png", "home-card-b.png", "home-card-c.png", "home-card-d.png",
 ];
+
+export function markSidebarMenu(menu, document) {
+  const trigger = document.getElementById(menu.getAttribute("aria-labelledby"));
+  const footer = trigger?.closest(".relative.shrink-0");
+  if (!footer?.closest(".app-shell-left-panel, [data-app-navigation-rail]")
+    || !footer.querySelector("div.sidebar-item")) return;
+  const kind = trigger.closest("div.sidebar-item") ? "profile"
+    : trigger.closest(".empty\\:hidden") ? "help" : null;
+  if (kind) menu.dataset.codexSkinMenu = kind;
+}
 
 async function readJson(file) {
   return JSON.parse(await fs.readFile(file, "utf8"));
@@ -151,6 +162,13 @@ async function apply(id) {
       return { ok: true, id: current.id, unchanged: true };
     }
     current?.cleanup?.();
+    const markMenu = ${markSidebarMenu.toString()};
+    const onMenuFocus = (event) => {
+      const menu = event.target.closest?.('[role="menu"][aria-labelledby]');
+      if (menu) markMenu(menu, document);
+    };
+    document.addEventListener("focusin", onMenuFocus, true);
+    onMenuFocus({ target: document.activeElement });
     const style = document.createElement("style");
     style.id = styleId;
     (document.head || document.documentElement).appendChild(style);
@@ -554,6 +572,8 @@ async function apply(id) {
       sendToComposer({ type: "codex-micro-insert-composer-text", text: "风格：" });
     };
     const cleanup = () => {
+      document.removeEventListener("focusin", onMenuFocus, true);
+      document.querySelectorAll("[data-codex-skin-menu]").forEach((menu) => delete menu.dataset.codexSkinMenu);
       document.getElementById(styleId)?.remove();
       document.getElementById(toolbarId)?.remove();
       delete document.documentElement.dataset.codexSkin;
@@ -573,8 +593,10 @@ async function inspect() {
   return evaluate(`({ id: window.__CODEX_SKIN__?.id || "native", fingerprint: window.__CODEX_SKIN__?.fingerprint || null })`);
 }
 
-if (command === "themes") console.log(JSON.stringify(await listThemes(), null, 2));
-else if (command === "validate") console.log(JSON.stringify(await validate(option("--theme"))));
-else if (command === "inspect") console.log(JSON.stringify(await inspect()));
-else if (command === "apply") console.log(JSON.stringify(await apply(option("--theme"))));
-else throw new Error("用法：skin.mjs themes|validate|inspect|apply");
+if (process.argv[1] && await fs.realpath(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (command === "themes") console.log(JSON.stringify(await listThemes(), null, 2));
+  else if (command === "validate") console.log(JSON.stringify(await validate(option("--theme"))));
+  else if (command === "inspect") console.log(JSON.stringify(await inspect()));
+  else if (command === "apply") console.log(JSON.stringify(await apply(option("--theme"))));
+  else throw new Error("用法：skin.mjs themes|validate|inspect|apply");
+}

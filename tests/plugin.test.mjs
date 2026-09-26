@@ -37,6 +37,7 @@ test("plugin manifests resolve and the MCP server lists its tools", async () => 
     assert.equal(result.status, 0, result.stderr);
     const replies = result.stdout.trim().split("\n").map(JSON.parse);
     assert.equal(replies[0].result.serverInfo.name, "codex-skin-switcher");
+    assert.equal(replies[0].result.serverInfo.version, manifest.version);
     assert.deepEqual(replies[1].result.tools.map((tool) => tool.name).sort(), ["get_skin_status", "set_skin"]);
   } finally {
     await fs.rm(state, { recursive: true, force: true });

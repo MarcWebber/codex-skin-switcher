@@ -7,11 +7,50 @@ import path from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { markSidebarMenu } from "../plugins/codex-skin-switcher/runtime/skin.mjs";
 
 const exec = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const plugin = path.join(root, "plugins", "codex-skin-switcher");
 const runtime = path.join(plugin, "runtime", "skin.mjs");
+
+test("sidebar menu art follows the native trigger, independent of avatar, language and placement", () => {
+  for (const kind of ["profile", "help", "unrelated", "outside", "missing"]) {
+    const menu = {
+      dataset: { side: "right" },
+      getAttribute(name) {
+        assert.equal(name, "aria-labelledby");
+        return "native-trigger-42";
+      },
+    };
+    const footer = {
+      closest(selector) {
+        assert.equal(selector, ".app-shell-left-panel, [data-app-navigation-rail]");
+        return kind === "outside" ? null : {};
+      },
+      querySelector(selector) {
+        assert.equal(selector, "div.sidebar-item");
+        return kind === "unrelated" ? null : {};
+      },
+    };
+    const trigger = {
+      // The new ButtonInner/avatar wrappers need no inspection or modification.
+      closest(selector) {
+        if (selector === ".relative.shrink-0") return footer;
+        if (selector === "div.sidebar-item") return kind === "profile" ? {} : null;
+        if (selector === ".empty\\:hidden") return kind === "help" ? {} : null;
+        assert.fail(`unexpected selector: ${selector}`);
+      },
+    };
+    markSidebarMenu(menu, {
+      getElementById(id) {
+        assert.equal(id, "native-trigger-42");
+        return kind === "missing" ? null : trigger;
+      },
+    });
+    assert.equal(menu.dataset.codexSkinMenu, ["profile", "help"].includes(kind) ? kind : undefined);
+  }
+});
 
 test("runtime validates and builds native and selected themes", async () => {
   const state = await fs.mkdtemp(path.join(os.tmpdir(), "codex-skin-runtime-test-"));

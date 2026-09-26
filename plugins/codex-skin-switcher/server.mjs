@@ -365,7 +365,7 @@ async function handle(method, params = {}) {
   if (method === "initialize") return {
     protocolVersion: params.protocolVersion || "2025-06-18",
     capabilities: { tools: { listChanged: false } },
-    serverInfo: { name: "codex-skin-switcher", version: "0.1.3" },
+    serverInfo: { name: "codex-skin-switcher", version: "0.1.4" },
   };
   if (method === "ping") return {};
   if (method === "tools/list") return { tools };
