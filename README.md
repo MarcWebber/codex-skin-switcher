@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>macOS Codex 本地皮肤切换器</strong><br>
-  一键换肤、一键创建、一键投稿、一键下载。
+  换一套喜欢的背景，在 Codex 里用提示词创建自己的皮肤。
 </p>
 
 <p align="center">
@@ -19,12 +19,24 @@
 </p>
 
 <p align="center">
+  <a href="./README.en.md"><strong>English</strong></a>
+  ·
+  <a href="#2-quickstart"><strong>快速开始</strong></a>
+  ·
+  <a href="https://github.com/MarcWebber/codex-skin-switcher/releases/latest"><strong>最新版本</strong></a>
+  ·
   <a href="https://github.com/MarcWebber/codex-skin-switcher"><strong>插件仓库</strong></a>
   ·
   <a href="https://github.com/MarcWebber/codex-skins"><strong>皮肤仓库</strong></a>
 </p>
 
 # 1. 效果展示
+
+![Codex 换肤演示：切换皮肤、浏览市场、用提示词创建和恢复原生](./plugins/codex-skin-switcher/assets/demo/overview.gif)
+
+演示由真实界面截图组成，约 24 秒。保留 Codex 原生操作，主题可以调整背景、字体、按钮与菜单插图。
+
+[中文演示](./plugins/codex-skin-switcher/assets/demo/demo-zh.mp4) · [English demo](./plugins/codex-skin-switcher/assets/demo/demo-en.mp4) · [中英文介绍](./docs/PROMOTION.md)
 
 ![可爱的木偶大人](./plugins/codex-skin-switcher/assets/screenshots/showcase-puppet.png)
 
@@ -49,6 +61,12 @@ codex plugin marketplace add MarcWebber/codex-skin-switcher && codex plugin add 
 ```
 
 安装或升级后，新建一个 Codex 任务，让新的 Skill 与本地服务进入当前会话。
+
+升级已有安装：
+
+```bash
+codex plugin marketplace upgrade marcwebber && codex plugin add codex-skin-switcher@marcwebber
+```
 
 ## 2.3 切换
 
