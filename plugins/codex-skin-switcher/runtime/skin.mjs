@@ -131,7 +131,8 @@ async function apply(id) {
   const selected = listed.find((theme) => theme.id === id);
   if (id !== "native" && !selected) throw new Error(`未知皮肤：${id}`);
   const active = selected ? await loadTheme(id) : null;
-  const bundled = listed.map((theme) => theme.id === id ? active : { id: theme.id, label: theme.label });
+  const bundled = await Promise.all(listed.map((theme) => theme.id === id ? active
+    : loadTheme(theme.id).catch(() => ({ id: theme.id, label: theme.label }))));
   const creatorSkill = {
     name: "codex-skin-switcher:skin-creator",
     displayName: "skin-creator",
@@ -141,7 +142,7 @@ async function apply(id) {
   };
   const runtimeFingerprint = crypto.createHash("sha256").update(await fs.readFile(new URL(import.meta.url))).digest("hex");
   const bundleFingerprint = crypto.createHash("sha256").update(JSON.stringify({
-    themes: bundled.map((theme) => [theme.id, theme.label]),
+    themes: bundled.map((theme) => [theme.id, theme.label, theme.fingerprint]),
     active: active?.fingerprint || "native",
     runtimeFingerprint,
     creatorSkillPath,
@@ -269,7 +270,8 @@ async function apply(id) {
       return window[bridgeName];
     };
     const requestMarket = async (action, id = "") => {
-      const bridge = await waitForBridge();
+      const bridge = action === "local" || action === "select" ? window[bridgeName] : await waitForBridge();
+      if (typeof bridge !== "function") throw new Error("皮肤服务未就绪");
       return new Promise((resolve, reject) => {
         const requestId = ++bridgeRequestId;
         let timer;
@@ -316,7 +318,16 @@ async function apply(id) {
       for (const button of list.querySelectorAll(".item")) button.setAttribute("aria-pressed", String(button.dataset.id === (next?.id || "native")));
       panel.hidden = true;
     };
-    const select = (nextId) => requestMarket("select", nextId);
+    const select = async (nextId) => {
+      try {
+        return await requestMarket("select", nextId);
+      } catch (error) {
+        if (nextId !== "native" && typeof themes.find((theme) => theme.id === nextId)?.css !== "string") throw error;
+        activate(nextId);
+        label.title = "已在本次会话应用本地皮肤；后台服务恢复后，重新选择可保存启动偏好。";
+        return { ok: true, id: nextId };
+      }
+    };
     const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
     const transitionTo = async (nextId) => {
       document.getElementById("codex-skin-transition")?.remove();
@@ -420,7 +431,6 @@ async function apply(id) {
         button.innerHTML = "<span></span><span class=mark>✓</span>";
         button.firstElementChild.textContent = item.label;
         button.onclick = async () => {
-          if (item.id === window[key]?.id) return activate(item.id);
           title.textContent = "切换中…";
           try {
             await transitionTo(item.id);
@@ -452,7 +462,7 @@ async function apply(id) {
         }
         title.textContent = "切换皮肤";
       } catch {
-        title.textContent = "皮肤服务未就绪";
+        title.textContent = "本地皮肤";
       }
       renderLocal();
     };

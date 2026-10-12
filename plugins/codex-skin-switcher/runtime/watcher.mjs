@@ -30,13 +30,14 @@ export async function checkStartup(state, { process: currentProcess, remember, p
   if ((await currentProcess())?.pid !== app.pid || await ready() || await preset() === "native") return;
 
   await quit(app.pid);
-  for (let attempt = 0; attempt < 10; attempt++) {
+  // Quit confirmation and Codex's shutdown cleanup can exceed five seconds.
+  for (let attempt = 0; attempt < 60; attempt++) {
     const running = await currentProcess();
     if (!running) break;
     if (running.pid !== app.pid) return; // The user already opened another instance.
     await wait(500);
   }
-  if (await currentProcess()) throw new Error("Codex 未正常退出，本次皮肤恢复已停止；不会强制结束或重复重启。");
+  if (await currentProcess()) throw new Error("等待 Codex 正常退出超过 30 秒，本次皮肤恢复已停止；不会强制结束或重复重启。");
   await open();
   for (let attempt = 0; attempt < 20; attempt++) {
     const launched = await currentProcess();
@@ -61,7 +62,7 @@ export async function watchApp(appPath, stateRoot, port) {
     quit: async (pid) => {
       if ((await appProcess(appPath))?.pid !== pid) throw new Error("Codex 进程已变化，本次恢复取消。");
       const app = `application ${JSON.stringify(appPath)}`;
-      await exec("/usr/bin/osascript", ["-e", `if ${app} is running then tell ${app} to quit`], { timeout: 5000 });
+      await exec("/usr/bin/osascript", ["-e", `if ${app} is running then tell ${app} to quit`], { timeout: 30000 });
     },
     open: () => exec("/usr/bin/open", ["-n", appPath, "--args", `--remote-debugging-port=${port}`, "--remote-debugging-address=127.0.0.1"], { timeout: 5000 }),
     wait: sleep,
