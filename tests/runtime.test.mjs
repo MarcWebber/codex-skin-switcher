@@ -60,7 +60,7 @@ test("runtime validates and builds native and selected themes", async () => {
     await fs.cp(path.join(plugin, "runtime", "themes"), path.join(state, "themes"), { recursive: true });
     const incomplete = path.join(state, "themes", "inactive-theme");
     await fs.mkdir(incomplete);
-    await fs.writeFile(path.join(incomplete, "theme.json"), JSON.stringify({ label: "未启用", description: "不应读取资源" }));
+    await fs.writeFile(path.join(incomplete, "theme.json"), JSON.stringify({ label: "未启用", description: "缺少资源的主题" }));
 
     const run = async (...args) => JSON.parse((await exec(process.execPath, [runtime, ...args, "--root", state])).stdout);
     const themes = await run("themes");
@@ -72,7 +72,7 @@ test("runtime validates and builds native and selected themes", async () => {
 
     const source = await fs.readFile(runtime, "utf8");
     const bundleFingerprint = crypto.createHash("sha256").update(JSON.stringify({
-      themes: themes.map((theme) => [theme.id, theme.label]),
+      themes: themes.map((theme) => [theme.id, theme.label, theme.id === "layla-starlight" ? validated.fingerprint : undefined]),
       active: validated.fingerprint,
       runtimeFingerprint: crypto.createHash("sha256").update(source).digest("hex"),
       creatorSkillPath: "",
@@ -98,6 +98,100 @@ test("runtime validates and builds native and selected themes", async () => {
     const restored = JSON.parse((await exec(process.execPath, [path.join(state, "runtime", "skin.mjs"),
       "apply", "--theme", "layla-starlight", "--root", state])).stdout);
     assert.deepEqual(restored, { ok: true, id: "layla-starlight", unchanged: true });
+  } finally {
+    await fs.rm(state, { recursive: true, force: true });
+  }
+});
+
+test("installed themes and native remain switchable when the background service is unavailable", async () => {
+  const state = await fs.mkdtemp(path.join(os.tmpdir(), "codex-skin-offline-test-"));
+  try {
+    await fs.cp(path.join(plugin, "runtime"), path.join(state, "runtime"), { recursive: true });
+    await fs.cp(path.join(plugin, "runtime", "themes"), path.join(state, "themes"), { recursive: true });
+    await fs.writeFile(path.join(state, "runtime", "cdp.mjs"), `
+      import assert from 'node:assert/strict';
+      import { runInNewContext } from 'node:vm';
+      export async function connectPage() {
+        return { socket: { close() {} }, async send(method, { expression }) {
+          const ids = new Map();
+          class Element {
+            children = []; dataset = {}; style = {}; attributes = new Map();
+            textContent = ''; hidden = false;
+            append(...children) { children.forEach(child => this.appendChild(child)); }
+            appendChild(child) { this.children.push(child); if (child.id) ids.set(child.id, child); return child; }
+            replaceChildren(...children) { this.children = []; this.append(...children); }
+            attachShadow() { this.shadowRoot = new Element(); return this.shadowRoot; }
+            getElementById(id) {
+              if (!ids.has(id)) ids.set(id, Object.assign(new Element(), { id }));
+              return ids.get(id);
+            }
+            setAttribute(name, value) { this.attributes.set(name, value); }
+            hasAttribute(name) { return this.attributes.has(name); }
+            toggleAttribute(name, enabled) { enabled ? this.attributes.set(name, '') : this.attributes.delete(name); }
+            querySelectorAll() { return this.children.map(row => row.children[0]); }
+            addEventListener() {}
+            remove() { ids.delete(this.id); }
+            set innerHTML(value) { this.firstElementChild = new Element(); }
+          }
+          const listeners = new Set();
+          const window = {
+            addEventListener(type, listener) { listeners.add(listener); },
+            removeEventListener(type, listener) { listeners.delete(listener); },
+          };
+          const document = {
+            head: new Element(), body: new Element(), documentElement: new Element(), activeElement: {},
+            createElement() { return new Element(); },
+            getElementById(id) { return ids.get(id); },
+            querySelectorAll() { return []; },
+            addEventListener() {}, removeEventListener() {},
+          };
+          const value = runInNewContext(expression, {
+            window, document, localStorage: { getItem() { return null; }, setItem() {} },
+            setTimeout, clearTimeout, requestAnimationFrame: callback => callback(),
+            getComputedStyle: () => ({ getPropertyValue: () => '' }),
+          });
+          const choose = id => ids.get('themes').children.find(row => row.children[0].dataset.id === id).children[0].onclick();
+          const assertSkin = id => {
+            assert.equal(window.__CODEX_SKIN__.id, id);
+            assert.equal(document.documentElement.dataset.codexSkin, id === 'native' ? undefined : id);
+            assert.equal(Boolean(ids.get('codex-skin-style').textContent), id !== 'native');
+          };
+          for (const service of ['missing', 'failed', 'unresponsive']) {
+            if (service === 'failed') window.__codexSkinRequest = payload => {
+              const { requestId } = JSON.parse(payload);
+              queueMicrotask(() => {
+                for (const listener of [...listeners]) listener({ source: window, data: {
+                  type: 'codex-skin-response', requestId, ok: false, error: '皮肤服务未就绪',
+                } });
+              });
+            };
+            if (service === 'unresponsive') window.__codexSkinRequest = () => {};
+            ids.get('toggle').onclick();
+            await new Promise(resolve => setTimeout(resolve, service === 'unresponsive' ? 1600 : 0));
+            assert.equal(ids.get('title').textContent, '本地皮肤');
+            await choose('layla-starlight');
+            assertSkin('layla-starlight');
+            assert.match(ids.get('codex-skin-style').textContent, /--skin-art:url/);
+            await choose('native');
+            assertSkin('native');
+          }
+          let savedPreset;
+          window.__codexSkinRequest = payload => {
+            const { requestId, id } = JSON.parse(payload);
+            savedPreset = id;
+            queueMicrotask(() => {
+              for (const listener of [...listeners]) listener({ source: window, data: {
+                type: 'codex-skin-response', requestId, ok: true,
+              } });
+            });
+          };
+          await choose('native');
+          assert.equal(savedPreset, 'native');
+          return { result: { value } };
+        } };
+      }
+    `);
+    await exec(process.execPath, [path.join(state, "runtime", "skin.mjs"), "apply", "--theme", "native", "--root", state], { timeout: 8000 });
   } finally {
     await fs.rm(state, { recursive: true, force: true });
   }

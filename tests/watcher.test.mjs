@@ -34,6 +34,27 @@ test("a new launch gets one restart; normal quit stays closed; the next manual l
   assert.deepEqual(scenario.calls, [["quit", 100], ["open"], ["quit", 102], ["open"]]);
 });
 
+test("a confirmed quit can finish after five seconds and still reopen once", async () => {
+  const { scenario, dependencies, state } = fixture();
+  let quitRequested = false;
+  let elapsed = 0;
+  dependencies.quit = async (pid) => {
+    scenario.calls.push(["quit", pid]);
+    quitRequested = true;
+  };
+  dependencies.wait = async (ms) => {
+    if (!quitRequested) return;
+    elapsed += ms;
+    if (elapsed >= 12000) scenario.app = null;
+  };
+  await checkStartup(state, dependencies);
+  assert.equal(elapsed, 12000);
+  assert.deepEqual(scenario.calls, [["quit", 100], ["open"]]);
+  assert.equal(scenario.savedPid, 101);
+  await checkStartup({ pid: scenario.savedPid }, dependencies);
+  assert.equal(scenario.calls.length, 2);
+});
+
 test("ready, flagged, native, existing and already handled sessions never restart", async () => {
   for (const mode of ["ready", "flagged", "native", "existing", "handled"]) {
     const { scenario, dependencies, state } = fixture();
@@ -64,14 +85,22 @@ test("readiness or a user quit during startup cancels the restart", async () => 
 test("failed quit or launch is not retried, including after watcher recovery", async () => {
   for (const mode of ["quit-cancelled", "quit-error", "open-error", "open-timeout"]) {
     const { scenario, dependencies, state } = fixture();
+    let exitWaitMs = 0;
+    dependencies.wait = async (ms) => {
+      if (scenario.calls.length && ms === 500) exitWaitMs += ms;
+    };
     if (mode === "quit-cancelled") dependencies.quit = async () => { scenario.calls.push(["quit"]); };
     if (mode === "quit-error") dependencies.quit = async () => { scenario.calls.push(["quit"]); throw new Error("denied"); };
     if (mode === "open-error") dependencies.open = async () => { scenario.calls.push(["open"]); throw new Error("failed"); };
     if (mode === "open-timeout") dependencies.open = async () => { scenario.calls.push(["open"]); };
     await assert.rejects(checkStartup(state, dependencies));
+    if (mode === "quit-cancelled") assert.equal(exitWaitMs, 30000);
     const calls = scenario.calls.slice();
     await checkStartup({ pid: scenario.savedPid }, dependencies);
     assert.deepEqual(scenario.calls, calls, mode);
     if (mode.startsWith("quit")) assert.equal(scenario.calls.some(([name]) => name === "open"), false);
+    scenario.app = null;
+    await checkStartup(state, dependencies);
+    assert.deepEqual(scenario.calls, calls, `${mode}: later user quit stays closed`);
   }
 });
