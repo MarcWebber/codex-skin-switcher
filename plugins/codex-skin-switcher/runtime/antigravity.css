@@ -1,0 +1,74 @@
+html[data-antigravity-skin],
+html[data-antigravity-skin] body {
+  color-scheme: var(--skin-color-scheme, light);
+  --background: transparent !important;
+  --content: transparent !important;
+  --foreground: var(--skin-text) !important;
+  --secondary-foreground: var(--skin-text) !important;
+  --muted-foreground: var(--skin-muted) !important;
+  --primary: var(--skin-accent) !important;
+  --primary-foreground: var(--skin-on-accent, var(--skin-text)) !important;
+  --card: var(--skin-surface) !important;
+  --card-border: var(--skin-border) !important;
+  --border: var(--skin-border) !important;
+  --input: var(--skin-control) !important;
+  --popover: var(--skin-control) !important;
+  --popover-foreground: var(--skin-text) !important;
+  --sidebar: var(--skin-sidebar) !important;
+  --secondary: color-mix(in srgb, var(--skin-accent) 14%, var(--skin-control)) !important;
+  --muted: color-mix(in srgb, var(--skin-accent) 8%, var(--skin-control)) !important;
+  --sidebar-muted: color-mix(in srgb, var(--skin-accent) 16%, var(--skin-sidebar)) !important;
+  --sidebar-secondary: color-mix(in srgb, var(--skin-accent) 22%, var(--skin-sidebar)) !important;
+  --font-sans: var(--skin-font) !important;
+  --font-mono: var(--skin-code-font) !important;
+  --editor-font-family: var(--skin-code-font) !important;
+  --editor-code-block-background: var(--skin-control) !important;
+  --vscode-editor-background: var(--skin-control) !important;
+  --vscode-editor-foreground: var(--skin-text) !important;
+  --vscode-terminal-background: var(--skin-control) !important;
+  --vscode-terminal-foreground: var(--skin-text) !important;
+  --vscode-menu-background: var(--skin-control) !important;
+  --vscode-menu-foreground: var(--skin-text) !important;
+  --vscode-input-background: var(--skin-control) !important;
+  --vscode-input-foreground: var(--skin-text) !important;
+  --vscode-focusBorder: var(--skin-accent) !important;
+}
+
+html[data-antigravity-skin] body {
+  isolation: isolate;
+  background: var(--skin-canvas) !important;
+  color: var(--skin-text);
+  font-family: var(--skin-font);
+}
+
+html[data-antigravity-skin] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-position: var(--skin-art-position);
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: var(--skin-art-opacity);
+}
+
+html[data-antigravity-skin] button,
+html[data-antigravity-skin] input,
+html[data-antigravity-skin] textarea,
+html[data-antigravity-skin] select {
+  font-family: var(--skin-font);
+}
+
+html[data-antigravity-skin] [role="dialog"],
+html[data-antigravity-skin] [role="menu"],
+html[data-antigravity-skin] [data-testid="model-selector-panel"] {
+  background: var(--skin-control);
+  color: var(--skin-text);
+  border-color: var(--skin-border);
+}
+
+html[data-antigravity-skin] pre,
+html[data-antigravity-skin] code {
+  font-family: var(--skin-code-font);
+}

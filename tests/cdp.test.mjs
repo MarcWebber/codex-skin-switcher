@@ -69,7 +69,17 @@ test("CDP disconnection rejects pending and future commands", async (t) => {
   await assert.rejects(pending, /连接已断开/);
   await assert.rejects(connection.send("Runtime.enable"), /连接已断开/);
   globalThis.fetch = async () => new Response("[]");
-  await assert.rejects(connectPage(9335), /没有 Codex 主页面/);
+  await assert.rejects(connectPage(9335), /没有匹配的应用主页面/);
+});
+
+test("CDP supports a host-specific page selector without changing the Codex default", async (t) => {
+  transport(t);
+  globalThis.fetch = async () => new Response(JSON.stringify([
+    { type: "page", title: "Other", url: "https://127.0.0.1:5000/", webSocketDebuggerUrl: "ws://other" },
+    { type: "page", title: "Antigravity", url: "https://127.0.0.1:5001/", webSocketDebuggerUrl: "ws://antigravity" },
+  ]));
+  const connection = await connectPage(5002, 5000, (item) => item.title === "Antigravity");
+  assert.equal(connection.socket.url, "ws://antigravity");
 });
 
 test("background bridge restores at startup and preserves a reload during injection", { timeout: 2000 }, async (t) => {

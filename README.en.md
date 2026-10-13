@@ -182,3 +182,7 @@ macOS only; Node.js 22+. GitHub CLI is needed only when submitting a theme. Wind
 # 9. License
 
 Code is licensed under [MIT](./LICENSE). Character and third-party artwork have their own terms; see [NOTICE](./NOTICE.md). [Privacy details](./plugins/codex-skin-switcher/docs/PRIVACY.md).
+
+# 10. Antigravity
+
+A local adapter for the Antigravity desktop app is available on macOS only. It reuses installed themes and supports an in-app selector, Native restore, and restoration after launch without patching or restarting the app. See the [Antigravity guide](plugins/codex-skin-switcher/docs/ANTIGRAVITY.md).
