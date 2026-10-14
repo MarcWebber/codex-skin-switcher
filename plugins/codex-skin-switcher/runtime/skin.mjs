@@ -70,10 +70,7 @@ function validateExtraCss(css, id) {
   }
 }
 
-async function loadTheme(id, customFolder = null) {
-  if (!themePattern.test(id)) throw new Error(`非法主题名：${id}`);
-  const folder = customFolder ? path.resolve(customFolder) : path.join(stateRoot, "themes", id);
-  const data = await readJson(path.join(folder, "theme.json"));
+export function validateThemeVars(data, id) {
   if (!data.vars || typeof data.vars !== "object" || Array.isArray(data.vars)) throw new Error(`${id}/theme.json 缺少 vars`);
   for (const key of requiredVars) if (typeof data.vars[key] !== "string") throw new Error(`${id}/theme.json 缺少 ${key}`);
   for (const [key, value] of Object.entries(data.vars)) {
@@ -81,6 +78,13 @@ async function loadTheme(id, customFolder = null) {
       throw new Error(`${id}/theme.json 含非法 CSS 变量`);
     }
   }
+}
+
+async function loadTheme(id, customFolder = null) {
+  if (!themePattern.test(id)) throw new Error(`非法主题名：${id}`);
+  const folder = customFolder ? path.resolve(customFolder) : path.join(stateRoot, "themes", id);
+  const data = await readJson(path.join(folder, "theme.json"));
+  validateThemeVars(data, id);
   const extra = await fs.readFile(path.join(folder, "extra.css"), "utf8");
   validateExtraCss(extra, id);
   const artFile = path.join(folder, "art.png");

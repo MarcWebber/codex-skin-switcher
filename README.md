@@ -251,6 +251,10 @@ Skin Creator 把提示词和参考图做成主题；想分享时，再通过 Pul
 - [MarcWebber/codex-skin-switcher](https://github.com/MarcWebber/codex-skin-switcher)
 - [MarcWebber/codex-skins](https://github.com/MarcWebber/codex-skins)
 
-# 10. Welcome Windows Support
+# 10. Antigravity
+
+新增本地 Antigravity 桌面适配（macOS only）：复用已有主题，支持右上角切换、原生恢复和启动恢复，不修改应用包、不重启应用。安装步骤见 [Antigravity](plugins/codex-skin-switcher/docs/ANTIGRAVITY.md)。
+
+# 11. Welcome Windows Support
 
 当前实现与回归范围仍是 macOS。欢迎通过 Issue 或 Pull Request 参与 Windows 启动、路径处理和界面回归适配。

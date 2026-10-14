@@ -1,8 +1,8 @@
-export async function connectPage(port, timeout = 5000) {
+export async function connectPage(port, timeout = 5000, matches = (item) => item.url === "app://-/index.html") {
   const response = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(timeout) });
   if (!response.ok) throw new Error(`CDP 连接失败：${response.status}`);
-  const target = (await response.json()).find((item) => item.type === "page" && item.url === "app://-/index.html");
-  if (!target) throw new Error(`端口 ${port} 没有 Codex 主页面`);
+  const target = (await response.json()).find((item) => item.type === "page" && matches(item));
+  if (!target) throw new Error(`端口 ${port} 没有匹配的应用主页面`);
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   const pending = new Map();
   let requestId = 0;
