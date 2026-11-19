@@ -10,6 +10,7 @@ test("Antigravity uses its own dynamic port and local main page", () => {
   assert.equal(parsePort("53327\n/devtools/browser/abc"), 53327);
   for (const value of ["0", "65536", "invalid", ""]) assert.throws(() => parsePort(value), /端口无效/);
   assert.equal(matchesPage({ title: "Antigravity", url: "https://127.0.0.1:53329/" }), true);
+  assert.equal(matchesPage({ title: "Task - Project - Antigravity", url: "https://127.0.0.1:53329/c/123" }), true);
   assert.equal(matchesPage({ title: "Codex", url: "app://-/index.html" }), false);
   assert.equal(matchesPage({ title: "Antigravity", url: "https://example.com/" }), false);
 });
