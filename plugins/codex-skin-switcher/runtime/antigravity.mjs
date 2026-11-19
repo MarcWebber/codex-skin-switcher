@@ -30,7 +30,8 @@ export function parsePort(text) {
 
 export function matchesPage(item) {
   const url = new URL(item.url);
-  return item.title === "Antigravity" && url.protocol === "https:" && url.hostname === "127.0.0.1";
+  const isMainTitle = item.title === "Antigravity" || item.title.endsWith(" - Antigravity");
+  return isMainTitle && url.protocol === "https:" && url.hostname === "127.0.0.1";
 }
 
 async function connect() {

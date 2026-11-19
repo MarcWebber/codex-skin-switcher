@@ -41,6 +41,42 @@ html[data-antigravity-skin] body {
   font-family: var(--skin-font);
 }
 
+html[data-antigravity-skin] .agy-shell,
+html[data-antigravity-skin] .agy-inset-shell {
+  background: transparent !important;
+  background-color: transparent !important;
+  --shell-canvas: transparent !important;
+  --sidebar: var(--skin-sidebar) !important;
+  --color-sidebar: var(--skin-sidebar) !important;
+  --sidebar-muted: color-mix(in srgb, var(--skin-accent) 16%, var(--skin-sidebar)) !important;
+  --sidebar-secondary: color-mix(in srgb, var(--skin-accent) 22%, var(--skin-sidebar)) !important;
+  --color-sidebar-muted: color-mix(in srgb, var(--skin-accent) 16%, var(--skin-sidebar)) !important;
+  --color-sidebar-secondary: color-mix(in srgb, var(--skin-accent) 22%, var(--skin-sidebar)) !important;
+}
+
+html[data-antigravity-skin] .surface-composer {
+  background: var(--skin-border) !important;
+  box-shadow: 0 0 0 1px var(--skin-border), 0 10px 28px -10px rgba(40, 48, 82, 0.18) !important;
+}
+
+html[data-antigravity-skin] .surface-composer-card {
+  background: var(--skin-control) !important;
+  color: var(--skin-text) !important;
+  box-shadow: none !important;
+}
+
+html[data-antigravity-skin] .agy-user-bubble {
+  background: var(--skin-surface) !important;
+  color: var(--skin-text) !important;
+  border: 1px solid var(--skin-border) !important;
+}
+
+html[data-antigravity-skin] .agy-sidebar-row[data-selected="true"] {
+  background: color-mix(in srgb, var(--skin-accent) 18%, var(--skin-control)) !important;
+  --row-bg: color-mix(in srgb, var(--skin-accent) 18%, var(--skin-control)) !important;
+  color: var(--skin-text) !important;
+}
+
 html[data-antigravity-skin] body::before {
   content: "";
   position: fixed;
