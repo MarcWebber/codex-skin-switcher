@@ -77,6 +77,22 @@ html[data-antigravity-skin] .agy-sidebar-row[data-selected="true"] {
   color: var(--skin-text) !important;
 }
 
+html[data-antigravity-skin] .text-background {
+  color: var(--skin-control) !important;
+}
+
+html[data-antigravity-skin] [data-testid="voice-live-pill"] {
+  background: var(--skin-accent) !important;
+  color: var(--skin-control) !important;
+}
+
+html[data-antigravity-skin] .react-tooltip,
+html[data-antigravity-skin] [role="tooltip"] {
+  background: var(--skin-control) !important;
+  color: var(--skin-text) !important;
+  border: 1px solid var(--skin-border) !important;
+}
+
 html[data-antigravity-skin] body::before {
   content: "";
   position: fixed;
